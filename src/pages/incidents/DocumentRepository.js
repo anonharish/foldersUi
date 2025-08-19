@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Upload, Folder, File, ChevronRight, ChevronDown, X, MessageCircle, Trash2 } from 'lucide-react';
+import { Search, Upload, Folder, File, ChevronRight, ChevronDown, X, MessageCircle, Trash2, FolderPlus } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Modal, Button } from 'react-bootstrap';
 import { Autocomplete, TextField, Typography } from '@mui/material';
@@ -10,7 +10,6 @@ const DocumentRepository = () => {
     const location = useLocation();
     const searchedFileName = location.state?.searchedFileName;
     const [fileNotFound, setFileNotFound] = useState(false);
-
 
 
     // Initial folders structure
@@ -61,6 +60,8 @@ const DocumentRepository = () => {
     const [showAddFolderModal, setShowAddFolderModal] = useState(false);
     const [newFolderName, setNewFolderName] = useState('');
     const [activeFolder, setActiveFolder] = useState(null);
+    const [uploading, setUploading] = useState(false);
+
 
     const sortOptions = [
         { label: 'Last Viewed', value: 'lastViewed' },
@@ -111,48 +112,59 @@ const DocumentRepository = () => {
     };
 
     const handleFileUpload = (event) => {
-        const files = Array.from(event.target.files);
-        if (!files.length || !selectedFolder) return;
+    const files = Array.from(event.target.files);
+    if (!files.length || !activeFolder) return;
 
-        const validFiles = files.filter(file => ALLOWED_TYPES.includes(file.type));
+    setUploading(true); // show feedback while uploading
 
-        const newFiles = validFiles.map(file => ({
-            id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
-            name: file.name,
-            size: file.size,
-            type: file.type,
-            uploadedAt: new Date().toISOString(),
-            url: URL.createObjectURL(file)
-        }));
-
-        setFolders(prevFolders => {
-            const updatedFolders = prevFolders.map(folder =>
-                folder.id === selectedFolder.id
-                    ? { ...folder, files: [...folder.files, ...newFiles] }
-                    : folder
-            );
-
-            const updatedSelectedFolder = updatedFolders.find(folder => folder.id === selectedFolder.id);
-            setSelectedFolder(updatedSelectedFolder);
-
-            return updatedFolders;
-        });
-    };
-
-    const handleFileDelete = (fileId) => {
+    // Simulate async upload delay (you can remove setTimeout if you don’t want fake delay)
+    setTimeout(() => {
         setFolders((prevFolders) => {
             const updatedFolders = prevFolders.map((folder) =>
-                folder.id === selectedFolder.id
-                    ? { ...folder, files: folder.files.filter((f) => f.id !== fileId) }
+                folder.id === activeFolder.id
+                    ? {
+                          ...folder,
+                          files: [
+                              ...folder.files,
+                              ...files.map((file) => ({
+                                  id: Date.now() + Math.random(),
+                                  name: file.name,
+                                  size: file.size,
+                                  uploadedAt: new Date().toISOString(),
+                              })),
+                          ],
+                      }
                     : folder
             );
 
-            const updatedSelectedFolder = updatedFolders.find(folder => folder.id === selectedFolder.id);
-            setSelectedFolder(updatedSelectedFolder);
+            const updatedActiveFolder = updatedFolders.find(
+                (folder) => folder.id === activeFolder.id
+            );
+            setActiveFolder(updatedActiveFolder);
 
             return updatedFolders;
         });
-    };
+
+        setUploading(false); // hide feedback
+        event.target.value = ""; // reset input so same file can be re-uploaded
+    }, 1000);
+};
+
+    const handleFileDelete = (fileId) => {
+    setFolders((prevFolders) => {
+        const updatedFolders = prevFolders.map((folder) =>
+            folder.id === activeFolder.id
+                ? { ...folder, files: folder.files.filter((f) => f.id !== fileId) }
+                : folder
+        );
+
+        const updatedActiveFolder = updatedFolders.find(folder => folder.id === activeFolder.id);
+        setActiveFolder(updatedActiveFolder);
+
+        return updatedFolders;
+    });
+};
+
 
     const toggleFolderExpansion = (folderId) => {
         setFolders(prevFolders => prevFolders.map(folder =>
@@ -265,7 +277,15 @@ const DocumentRepository = () => {
     ];
 
     return (
+        
         <div className="p-4 ">
+            {uploading && (
+                <div className="position-fixed top-0 start-0 w-100 h-100 d-flex justify-content-center align-items-center bg-dark bg-opacity-50" style={{ zIndex: 2000 }}>
+                    <div className="spinner-border text-light" role="status" style={{ width: "3rem", height: "3rem" }}>
+                        <span className="visually-hidden">Uploading...</span>
+                    </div>
+                </div>
+            )}
             {fileNotFound && searchedFileName && (
                 <div className="alert alert-warning mb-4" role="alert">
                     The file "{searchedFileName}" was not found in the repository.
@@ -318,11 +338,21 @@ const DocumentRepository = () => {
                 </div>
             </div>
 
-            <div style={{ padding: "16px" }}>
+            <div style={{ padding: "16px" }}>                
                 {/* Folders Section */}
-                <Typography variant="h6" sx={{ mb: 2 }}>
-                   {activeFolder ?`Folders / ${activeFolder.name }`: "Folders"} 
-                </Typography>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
+                    <Typography variant="h6" sx={{ mb: 2 }}>
+                    {activeFolder ?`Folders / ${activeFolder.name }`: "Folders"} 
+                    </Typography>
+                    <div className="flex justify-between mb-3">
+                        <button
+                            onClick={handleAddFolder}
+                        >
+                            <span style={{ marginRight: ".5rem" }}><FolderPlus size={18} /></span>
+                            Add Folder
+                        </button>
+                    </div>
+                </div>
                 <div>
                     {!activeFolder ? (
                         <>
@@ -340,8 +370,6 @@ const DocumentRepository = () => {
                         </>
                     ) : (
                         <>
-                         
-
                             {/* Back button */}
                             <button
                                 style={{
@@ -356,17 +384,43 @@ const DocumentRepository = () => {
                                 ← Back to Folders
                             </button>
 
+                             <label className="btn btn-primary ms-2">
+                                    <Upload style={{ width: '1rem', height: '1rem' }} className="me-1" />
+                                    {uploading ? "Uploading..." : "Upload File"}
+                                    <input
+                                        type="file"
+                                        multiple
+                                        hidden
+                                        onChange={handleFileUpload}
+                                        disabled={uploading} // prevent multiple clicks
+                                    />
+                            </label>
+
                             <div style={{ display: "flex", flexWrap: "wrap", gap: "16px" }}>
                                 {activeFolder.files.length > 0 ? (
-                                    activeFolder.files.map((file) => (
-                                        <FileFolderCard
-                                            key={file.id}
-                                            type="file"
-                                            name={file.name}
-                                            size={`${Math.round(file.size / 1024)} KB`}
-                                            date={new Date(file.uploadedAt).toLocaleDateString()}
-                                        />
-                                    ))
+                                        activeFolder.files.map((file) => (
+                                            <div key={file.id} style={{ position: "relative" }}>
+                                                <FileFolderCard
+                                                    type="file"
+                                                    name={file.name}
+                                                    size={`${Math.round(file.size / 1024)} KB`}
+                                                    date={new Date(file.uploadedAt).toLocaleDateString()}
+                                                />
+                                                <button
+                                                    onClick={() => handleFileDelete(file.id)}
+                                                    style={{
+                                                        position: "absolute",
+                                                        top: "4px",
+                                                        right: "4px",
+                                                        border: "none",
+                                                        background: "transparent",
+                                                        cursor: "pointer"
+                                                    }}
+                                                >
+                                                    <Trash2 style={{ width: "1rem", height: "1rem", color: "red" }} />
+                                                </button>
+                                            </div>
+                                        ))
                                 ) : (
                                     <Typography variant="body2" color="text.secondary">
                                         No files inside this folder.
@@ -391,113 +445,61 @@ const DocumentRepository = () => {
                     ))}
                 </div>
             </div>
-            {/* 
-            <div className="row">
-                <div className="col-md-4 mb-4">
-                    <div className="border rounded p-3">
-                        <div className="d-flex justify-content-between mb-3">
-                            <h2 className="h6">Folders</h2>
-                            <button
-                                onClick={handleAddFolder}
-                                className="btn btn-success d-flex align-items-center gap-2"
-                            >
-                                Add Folder
-                            </button>
-                        </div>
 
-                        <div className="list-group">
-                            {folders
-                                .filter(folder => folder.parentId === null)
-                                .map(folder => (
-                                    <RenderFolder key={folder.id} folder={folder} />
-                                ))}
-                        </div>
-                    </div>
-                </div>
-
-                <div className="col-md-8">
-                    {selectedFolder && (
-                        <div>
-                            <div className="d-flex justify-content-between align-items-center mb-3">
-                                <h2 className="h5">{selectedFolder.name}</h2>
-                                <label className="cursor-pointer">
-                                    <div className="btn btn-primary d-flex align-items-center gap-2">
-                                        <Upload style={{ width: '1.25rem', height: '1.25rem' }} />
-                                        Upload
-                                    </div>
-                                    <input
-                                        type="file"
-                                        className="d-none"
-                                        multiple
-                                        accept={ALLOWED_TYPES.join(',')}
-                                        onChange={handleFileUpload}
-                                    />
-                                </label>
-                            </div>
-
-                            <div className="list-group">
-                                {getFilteredFiles().map(file => (
-                                    <div
-                                        key={file.id}
-                                        className={`d-flex align-items-center gap-3 list-group-item list-group-item-action ${searchedFileName === file.name ? 'bg-light' : ''
-                                            }`}
-                                    >
-                                        <File className="text-muted" style={{ width: '1.25rem', height: '1.25rem' }} />
-                                        <div className="flex-grow-1">
-                                            <h3 className="h6 mb-1 text-truncate">{file.name}</h3>
-                                            <small className="text-muted">
-                                                {formatFileSize(file.size)} • {new Date(file.uploadedAt).toLocaleDateString()}
-                                            </small>
-                                        </div>
-                                        <div className="d-flex gap-2">
-                                            <button
-                                                onClick={() => window.open(file.url, '_blank')}
-                                                className="btn btn-outline-secondary btn-sm"
-                                            >
-                                                View
-                                            </button>
-                                            <button
-                                                onClick={() => handleFileDelete(file.id)}
-                                                className="btn btn-outline-danger btn-sm"
-                                            >
-                                                <X style={{ width: '1.25rem', height: '1.25rem' }} />
-                                            </button>
-                                        </div>
-                                    </div>
-                                ))}
-                                {getFilteredFiles().length === 0 && (
-                                    <div className="text-center py-4 text-muted">
-                                        No files found
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-                    )}
-                </div>
-            </div>
-
-            <Modal show={showAddFolderModal} onHide={() => setShowAddFolderModal(false)}>
-                <Modal.Header closeButton>
-                    <Modal.Title>New Folder</Modal.Title>
+            <Modal
+                show={showAddFolderModal}
+                onHide={() => setShowAddFolderModal(false)}
+                centered
+                dialogClassName="custom-modal"
+            >
+                <Modal.Header style={{ borderBottom: 'none', padding: '1rem 1.5rem' }}>
+                    <Modal.Title style={{ fontWeight: '500', fontSize: '1.25rem' }}>New Folder</Modal.Title>
                 </Modal.Header>
-                <Modal.Body>
+
+                <Modal.Body style={{ padding: '1rem 1.5rem' }}>
                     <input
                         type="text"
                         value={newFolderName}
                         onChange={(e) => setNewFolderName(e.target.value)}
                         placeholder="Folder name"
                         className="form-control"
+                        style={{
+                            borderRadius: '8px',
+                            border: '1px solid #ccc',
+                            padding: '0.5rem 0.75rem',
+                            fontSize: '1rem',
+                            outline: 'none',
+                        }}
                     />
                 </Modal.Body>
-                <Modal.Footer>
-                    <Button variant="secondary" onClick={() => setShowAddFolderModal(false)}>
+
+                <Modal.Footer style={{ borderTop: 'none', padding: '0.75rem 1.5rem' }}>
+                    <Button
+                        variant="light"
+                        onClick={() => setShowAddFolderModal(false)}
+                        style={{
+                            borderRadius: '8px',
+                            border: '1px solid #ccc',
+                            fontWeight: '500',
+                            padding: '0.5rem 1rem',
+                        }}
+                    >
                         Cancel
                     </Button>
-                    <Button variant="primary" onClick={handleSaveNewFolder}>
+                    <Button
+                        variant="primary"
+                        onClick={handleSaveNewFolder}
+                        style={{
+                            borderRadius: '8px',
+                            padding: '0.5rem 1rem',
+                            fontWeight: '500',
+                        }}
+                    >
                         OK
                     </Button>
                 </Modal.Footer>
-            </Modal> */}
+            </Modal>
+
         </div>
     );
 };
