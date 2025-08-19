@@ -35,13 +35,19 @@
 }
 
 
-@media only screen and (max-width:1024px) {}
+@media only screen and (max-width:1024px) { 
+    .userCancel_btn{
+    margin-top: 10px !important;
+}}
 
 
-@media only screen and (max-width:1024px) {}
+@media only screen and (max-width:1024px) {
+}
 
 
 @media only screen and (max-width:995px) {
+
+   
     .calendar_align DatePicker {
         width: 100%;
     }
@@ -64,9 +70,17 @@
         display: block !important;
     }
 
+ 
+
     /* .sidebar_collapse {
         display: none;
     } */
+    .table-responsive-container {
+        width: 250px;
+        min-width: 100%;
+        max-width: 100%;
+        /* overflow-x: scroll; */
+    }
 
 
 
@@ -91,19 +105,96 @@
     .tbl_scrool {
         max-width: 650px;
     }
+
+
+    .table-responsive-container {
+        width: 250px !important;
+        min-width: 100% !important;
+        max-width: 100% !important;
+        /* overflow-x: scroll !important; */
+    }
+
+ 
 }
 
 @media only screen and (max-width:879px) {
     .sidebar-arrow-mbl {
         display: none !important;
     }
+
+
+    .table-responsive-container {
+        width: 250px !important;
+        min-width: 100% !important;
+        max-width: 100% !important;
+        /* overflow-x: scroll !important; */
+    }
+}
+
+@media only screen and (min-width:768px) {
+  
+    .flex-grow {
+        flex: 1 0 100%;
+        /* Make the content take the full width on smaller screens */
+    }
+
+    nav {
+        display: block !important;
+    }
+
+    .MuiTableCell-root {
+        padding: 10px;
+        font-size: 14px;
+    }
+
+    .MuiTableContainer-root {
+        max-height: 350px;
+    }
+
+    .responsive-btn {
+        margin-top: 10px;
+    }
+
+ 
+
+    .table-responsive-container {
+        width: 250px !important;
+        min-width: 100% !important;
+        max-width: 100% !important;
+        /* overflow-x: scroll !important; */
+    }
+    .responsive_span {
+        margin: 0px !important;
+        font-size: 14px !important;
+    }
+
 }
 
 
-
 @media only screen and (max-width:767px) {
+    .userCancel_btn {
+        margin-top: 10px !important;
+    }
+
+    .flex-grow {
+        flex: 1 0 100%;
+        /* Make the content take the full width on smaller screens */
+    }
+
+    .text-truncate {
+        overflow: hidden;
+        white-space: nowrap;
+        text-overflow: ellipsis;
+    }
+
+    .responsive-btn {
+        margin-top: 10px !important;
+    }
+
     .incident_mbl {
-        width: 50% !important;
+        font-size: 12px;
+        width: 100% !important;
+        float: left !important;
     }
 
     .mbl-sidebar {
@@ -137,18 +228,61 @@
     .sidebar-arrow-mbl {
         display: block !important;
     }
+
     .sidebar_collapse {
         display: none;
     }
+
     .mblDrawer {
         display: block;
-    
+
+    }
+
+    .table-responsive-container {
+        width: 250px !important;
+        min-width: 100% !important;
+        max-width: 100% !important;
+        /* overflow-x: scroll !important; */
+    }
+    .responsive_span {
+        margin: 0px !important;
+        font-size: 14px !important;
     }
 
 }
 
 
 @media only screen and (max-width:599px) {
+    .fileupload_responsive {
+        padding: 0px;
+        width: 92%;
+        margin: 10px;
+
+    }
+
+    .responsive_span {
+        margin: 0px !important;
+        font-size: 14px !important;
+    }
+
+    .william_logo_responsive {
+        /* height: 20px; */
+        width: 160px;
+    }
+
+    .incident-create-btn-resonsive {
+        width: 100% !important;
+    }
+
+    .deaprtment-responsive {
+        width: 200px !important;
+    }
+
+    .user-responsive-btn {
+        /* float: right !important; */
+        font-size: 12px;
+    }
+
     .card_incident {
         width: 100% !important;
         min-width: 100% !important;
@@ -156,7 +290,39 @@
 
     .btn_incident_create {
         margin-top: 10px !important;
+        width: 100% !important;
+        float: left !important;
     }
+
+    /* .incident_mbl {
+        width: 100% !important;
+    } */
+    .incident_mbl {
+        font-size: 12px;
+        width: 100% !important;
+        float: left !important;
+    }
+
+    .user-table-button-responsive button {
+        width: 100% !important;
+        margin-top: 10px !important;
+    }
+
+    .table-responsive-container {
+        width: 100px !important;
+        min-width: 100% !important;
+        max-width: 100% !important;
+        overflow-x: scroll !important;
+    }
+
+    .responsive-btn {
+        margin-top: 10px;
+    }
+
+    .btn_incident_create button {
+        float: left !important
+    }
+
 
     .header-mobi {
         display: block !important;
@@ -196,20 +362,24 @@
     .mbl_mb {
         margin-bottom: 10px;
     }
+
     .mblDrawer {
         display: block;
-    
+
     }
 
-}
-
-
-
-
-@media only screen and (min-width:768px) {
-
-    nav {
-        display: block !important;
+    .drawer-width-mbl {
+        width: 300px !important;
+        overflow-x: scroll;
+    }
+    .incident-dashboard-count{
+        margin-bottom: 10px;
+    }
+    .total-icident-dashboard{
+        margin: 1px;
+    }
+    .source-div{
+        margin-bottom: 10px;
     }
 
 }

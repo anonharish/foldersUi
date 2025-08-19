@@ -1,4 +1,5 @@
 import * as React from "react";
+import { useState, useEffect } from "react";
 import { styled, useTheme } from "@mui/material/styles";
 import Box from "@mui/material/Box";
 import MuiDrawer from "@mui/material/Drawer";
@@ -17,31 +18,21 @@ import {
 import IconButton from '@mui/material/IconButton';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
+import PersonAddAltIcon from '@mui/icons-material/PersonAddAlt';
 import Header from "./Header";
 import './Sidebar.css';
 import HomeIcon from '@mui/icons-material/Home';
+
 import Home from '../assets/images/HomeIcon.png';
 import Incident from '../assets/images/Incident.png';
 import ReportProblemIcon from '@mui/icons-material/ReportProblem';
-import { useState } from "react";
+import FolderOpenIcon from "@mui/icons-material/FolderOpen";
 
 
 
-const SidebarItems = [
-    {
-        label: "Dashboard",
-        path: "/dashboard",
-        icon: <HomeIcon />
 
-    },
-    {
-        label: "Incident",
-        path: "/incident",
-        icon: <ReportProblemIcon />
-    },
-];
 
-const drawerWidth = 220;
+const drawerWidth = 260;
 
 const openedMixin = (theme) => ({
     width: drawerWidth,
@@ -112,6 +103,44 @@ export default function Sidebar() {
     const [open, setOpen] = React.useState(false);
     const [sidebarOpen, setSidebarOpen] = useState(false);
 
+    const location = useLocation();
+    const { pathname } = location;
+
+    const shouldHideDrawer = pathname === "/" || pathname === "/forgotPassword";
+
+    const userID = localStorage.getItem('userTypeId')
+    console.log(userID)
+
+    const SidebarItems = [
+        {
+            label: "Dashboard",
+            path: "/incident/dashboard",
+            icon: <HomeIcon />
+
+        },
+        {
+            label: "Incident",
+            path: "/incident",
+            icon: <ReportProblemIcon />
+        },
+        // {
+        //     label: "Users",
+        //     path: "/admin/pannel",
+        //     icon: <PersonAddAltIcon />
+        // },
+        ...(userID == 1 ? [{
+            label: "Users",
+            path: "/admin/pannel",
+            icon: <PersonAddAltIcon />
+        }] : []),
+        //  {
+        //      label: "Document Repository",
+        //      path: "/document/repository",
+        //      icon: <FolderOpenIcon />
+        //  }
+    ];
+
+
     const handleDrawerOpen = () => {
         setOpen(!open);
     };
@@ -123,8 +152,7 @@ export default function Sidebar() {
         setOpen(false);
     };
 
-    const location = useLocation();
-    const { pathname } = location;
+
 
 
     const handleSidebarToggle = () => {
@@ -132,7 +160,7 @@ export default function Sidebar() {
         setSidebarOpen(!sidebarOpen);
     };
 
-    return (
+    return !shouldHideDrawer ? (
         <Box sx={{ display: "flex" }}>
             <CssBaseline />
             <Header onMenuClick={handleSidebarToggle} />
@@ -196,11 +224,13 @@ export default function Sidebar() {
                     <Divider />
                 </Drawer>
             </div>
-         
+
             <Box component="main" sx={{ flexGrow: 1, p: 3, }}>
                 <DrawerHeader />
                 <MainRoutes />
             </Box>
         </Box>
+    ) : (
+        <MainRoutes />
     );
 }

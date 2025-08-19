@@ -8,19 +8,31 @@ import TableContainer from '@mui/material/TableContainer';
 import TableHead from '@mui/material/TableHead';
 import TablePagination from '@mui/material/TablePagination';
 import TableRow from '@mui/material/TableRow';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import AddIcon from '@mui/icons-material/Add';
 import BuildIcon from '@mui/icons-material/Build';
 import { styled } from '@mui/material/styles';
 import { TextField, InputAdornment } from '@mui/material';
 import axios from 'axios';
+import { CircularProgress } from '@mui/material';
 import Autocomplete, { createFilterOptions } from '@mui/material/Autocomplete';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
-import { BASE_API_URL } from "../../api"
 import { Dialog, DialogTitle, DialogContent, DialogActions, Menu, MenuItem } from '@mui/material';
-import AiPrompt from '../../componnets/incidents/AiPrompt';
+import Breadcrumbs from '@mui/material/Breadcrumbs';
+import Link from '@mui/material/Link';
+
+import {
+  getIncidentCountDetails1,
+  fetchIncidentDetailsDashboard,
+  getMastersListByType,
+  addMasterByType,
+  addIncidentWithAI
+} from "../../api"
+
+
+
 
 
 
@@ -38,11 +50,11 @@ const StyledTableRow = styled(TableRow)(({ theme }) => ({
 
 
 const StyledStatusTableCell = styled(TableCell)(({ theme, status }) => ({
-  color: status === 'closed' ? 'green' : 'red',
+  color: status === 'Resolved' ? 'green' : 'red',
 }));
 
 const StyledStatusText = styled('span')(({ theme, status }) => ({
-  backgroundColor: status === 'closed' ? '#d7f9e8' : '#f9d7d7',
+  backgroundColor: status === 'Resolved' ? '#d7f9e8' : '#f9d7d7',
   padding: '4px 8px',
   borderRadius: '8px',
 }));
@@ -50,24 +62,35 @@ const StyledStatusText = styled('span')(({ theme, status }) => ({
 
 const columns = [
   {
-    id: 'id',
-    label: 'Incident id',
+    id: "id",
+    label: "Incident ID",
+    hidden: true,
+
+  },
+  {
+    id: 'incidentRecord',
+    label: 'Incident Record',
+    align: 'center'
   },
   {
     id: 'subject',
     label: 'Subject',
+    align: 'center'
   },
   {
-    id: 'orgName',
-    label: 'Organization name',
+    id: 'departmentName',
+    label: 'Department name',
+    align: 'center'
   },
   {
     id: 'category',
     label: 'Category',
+    align: 'center'
   },
   {
     id: 'severity',
     label: 'Severity',
+    align: 'center'
   },
   {
     id: 'created',
@@ -87,9 +110,9 @@ const columns = [
   }
 ];
 
-function createData(id, subject, orgName, category, severity, created, status, action) {
+function createData(id, incidentRecord, subject, departmentName, category, severity, created, status, action) {
 
-  return { id, subject, orgName, category, severity, created, status, action };
+  return { id, incidentRecord, subject, departmentName, category, severity, created, status, action };
 }
 const getStatusColor = (status) => {
   return status === 'open' ? 'green' : 'red';
@@ -116,6 +139,13 @@ const Incident = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [anchorEl, setAnchorEl] = useState(null);
   const open = Boolean(anchorEl);
+
+  // Get the user details from localStorage
+  const storedUser = JSON.parse(localStorage.getItem('userDetails'));
+  const userId = storedUser ? storedUser.userId : null;
+
+  console.log(userId);
+
   const handleClick = (event) => {
     setAnchorEl(event.currentTarget);
   };
@@ -147,11 +177,12 @@ const Incident = () => {
 
     const fetchIncidentDetails = async () => {
       try {
-        const response = await axios.post(BASE_API_URL + 'incident/fetchIncidentDetailsDashboard', {
+        const response = await axios.post(fetchIncidentDetailsDashboard, {
           orgId: 1,
           incidentStatusId: 34,
-          userId: 1
+          userId: userId
         });
+        console.log(response)
         const incidentData = response.data.dashboardList;
 
 
@@ -159,8 +190,9 @@ const Incident = () => {
         const formattedData = incidentData.map(incident =>
           createData(
             incident.incidentId,
+            incident.incidentRecord,
             incident.subject,
-            incident.organizationName,
+            incident.departmentName,
             incident.category,
             incident.severity,
             incident.createdOn,
@@ -183,7 +215,7 @@ const Incident = () => {
 
   const fetchDropdownData = async (sourceName) => {
     try {
-      const response = await axios.post(BASE_API_URL + 'incident/getMastersListByType', { sourceName });
+      const response = await axios.post(getMastersListByType, { sourceName });
       console.log('dropresponse', response)
       return response.data.masterList.map(item => ({ id: item.sourceId, title: item.sourceType }));
 
@@ -210,9 +242,9 @@ const Incident = () => {
 
   const getIncidentCountDetails = async () => {
     try {
-      const response = await axios.post(BASE_API_URL + 'incident/getIncidentCountDetails', {
+      const response = await axios.post(getIncidentCountDetails1, {
         "orgId": 1,
-        "userId": 1
+        "userId": userId
       });
       const count = response.data.incidentCount;
       setIncidentCount(count);
@@ -245,7 +277,7 @@ const Incident = () => {
           sourceType: newValue.inputValue
         };
         console.log('Payload:', payload);
-        const response = await axios.post(BASE_API_URL + "incident/addMasterByType", payload);
+        const response = await axios.post(addMasterByType, payload);
 
         if (response && response.data && response.data.masterSource && response.data.masterSource.sourceId) {
           id = response.data.masterSource.sourceId;
@@ -304,8 +336,17 @@ const Incident = () => {
     setRowsPerPage(+event.target.value);
     setPage(0);
   };
-  const createincidenthandler = () => {
-    navigate('/incident/create')
+  const createincidenthandlerwithAiPrompt = async () => {
+    try {
+      const response = await axios.post(addIncidentWithAI, {
+        userPrompt: prompt
+      });
+      const data = response.data
+      navigate('/incident/create', { state: data })
+    } catch (error) {
+      console.log('Error creating incident with ai prompt:', error)
+    }
+
   }
 
 
@@ -315,22 +356,21 @@ const Incident = () => {
   return (
 
     <div className='border-0'>
-      <div className='row' style={{ marginBottom: "15px" }}>
-        <div className='col-md-6 route-head incident_mbl'>
+      <div className='row mb-3'>
+        <div className='col-md-6 col-sm-12 route-head incident_mbl'>
           <h3 className='mb-0'>Incidents</h3>
-          <div>
-            <Link href="#">Home</Link> <span> / Incidents</span>
+          <Breadcrumbs aria-label="breadcrumb" className="breadcrumbs">
+            <Link underline="hover" color="inherit" href="/incident/dashboard">
+              Dashboard
+            </Link>
 
-          </div>
+            <Link underline="hover" color="inherit" href='#'>
+              Incidents
+            </Link>
+          </Breadcrumbs>
         </div>
-        {/* <div className='col-md-6 btn_incident_create incident_mbl' style={{ float: "right" }}>
-          <Button className='me-2 '
 
-            onClick={handeClickAiPromptDialog}
-          >
-            Add New Incident &nbsp; <span><AddIcon /></span></Button>
-        </div> */}
-        <div className='col-md-6 btn_incident_create incident_mbl' style={{ float: "right" }}>
+        <div className='col-md-6 col-sm-12 btn_incident_create incident_mbl incident-create-btn-resonsive' style={{ float: "right" }}>
           <Button
             className='me-2'
             aria-controls={open ? 'add-incident-menu' : undefined}
@@ -350,14 +390,19 @@ const Incident = () => {
               'aria-labelledby': 'add-incident-button',
             }}
           >
-            <MenuItem className="brown-menu-item" onClick={handleAiPrompt}>Create Incident by AI Prompt</MenuItem>
-            <MenuItem className="brown-menu-item" onClick={handleWithoutAiPrompt}>Create Incident without AI Prompt</MenuItem>
+            <MenuItem className="brown-menu-item" onClick={handleWithoutAiPrompt}>Create Incident</MenuItem>
+            <MenuItem className="brown-menu-item" onClick={handleAiPrompt}>Create Incident with AI Prompt</MenuItem>
+
           </Menu>
         </div>
 
       </div>
       {isLoading ? (
-        <div className='m-auto'>Loading...</div>
+
+        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+          <CircularProgress sx={{ color: '#533529' }} /> {/* Brown color */}
+        </div>
+
       ) :
         <div class="row mb-5 ">
           <div class="col-md-12">
@@ -366,33 +411,47 @@ const Incident = () => {
                 <div class="card-body">
                   <div class="d-flex justify-content-between mb-3">
                     <div>
-                      <span class="d-block" style={{ fontWeight: "600" }}>Total Incidents</span>
+                      <span class="card-head">Total Incidents</span>
                     </div>
 
-                    <div>
+                    {/* <div>
                       <span class="text-success fw-bold">+10%</span>
-                    </div>
+                    </div> */}
                   </div>
                   {/* <h3 class="mb-3 fw-bold">{incidentCount.total}</h3> */}
-                  <h3 class="mb-3 fw-bold">10</h3>
+                  <h3 class="mb-3 fw-bold">{incidentCount ? incidentCount.total : ""}</h3>
                   <div class="progress mb-2" style={{ height: "5px" }}>
-                    <div class="progress-bar bg-success" role="progressbar" aria-valuenow="40" aria-valuemin="0" aria-valuemax="100"
+                    <div class="progress-bar bg-info " role="progressbar" aria-valuenow="40" aria-valuemin="0" aria-valuemax="100"
                       style={{ width: "70%" }}>
                     </div>
                   </div>
                 </div>
               </div>
+
               <div class="card card_incident">
                 <div class="card-body">
                   <div class="d-flex justify-content-between mb-3">
                     <div>
-                      <span class="d-block" style={{ fontWeight: "600" }}>Pending Incidents</span>
-                    </div>
-                    <div>
-                      <span class="text-danger fw-bold">-2.8%</span>
+                      <span class="card-head" >Open Incidents</span>
                     </div>
                   </div>
-                  <h3 class="mb-3 fw-bold">100</h3>
+                  <h3 class="mb-3 fw-bold">{incidentCount ? incidentCount.open : ""}</h3>
+                  <div class="progress mb-2" style={{ height: "5px" }}>
+                    <div class="progress-bar bg-danger" role="progressbar" aria-valuenow="40" aria-valuemin="0" aria-valuemax="100"
+                      style={{ width: "70%" }}>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="card card_incident ">
+                <div class="card-body">
+                  <div class="d-flex justify-content-between mb-3">
+                    <div>
+                      <span class="card-head">Pending Incidents</span>
+                    </div>
+
+                  </div>
+                  <h3 class="mb-3 fw-bold">{incidentCount ? incidentCount.inProgress : ""}</h3>
                   <div class="progress mb-2" style={{ height: "5px" }}>
                     <div class="progress-bar bg-warning" role="progressbar" aria-valuenow="40" aria-valuemin="0" aria-valuemax="100"
                       style={{ width: "70%" }}>
@@ -404,50 +463,33 @@ const Incident = () => {
                 <div class="card-body">
                   <div class="d-flex justify-content-between mb-3">
                     <div>
-                      <span class="d-block" style={{ fontWeight: "600" }}>Resolved Incident</span>
+                      <span class="card-head">Resolved Incident</span>
                     </div>
-                    <div>
+                    {/* <div>
                       <span class="text-success fw-bold">+12.5%</span>
-                    </div>
+                    </div> */}
                   </div>
-                  <h3 class="mb-3 fw-bold">12</h3>
+                  <h3 class="mb-3 fw-bold">{incidentCount ? incidentCount.resolved : ""}</h3>
                   <div class="progress mb-2" style={{ height: "5px" }}>
-                    <div class="progress-bar bg-info" role="progressbar" aria-valuenow="40" aria-valuemin="0" aria-valuemax="100"
+                    <div class="progress-bar bg-success" role="progressbar" aria-valuenow="40" aria-valuemin="0" aria-valuemax="100"
                       style={{ width: "70%" }}>
                     </div>
                   </div>
                 </div>
               </div>
-              <div class="card card_incident">
-                <div class="card-body">
-                  <div class="d-flex justify-content-between mb-3">
-                    <div>
-                      <span class="d-block" style={{ fontWeight: "600" }}>Open Incidents</span>
-                    </div>
-                    <div>
-                      <span class="text-danger fw-bold">-75%</span>
-                    </div>
-                  </div>
-                  <h3 class="mb-3 fw-bold">12</h3>
-                  <div class="progress mb-2" style={{ height: "5px" }}>
-                    <div class="progress-bar bg-primary" role="progressbar" aria-valuenow="40" aria-valuemin="0" aria-valuemax="100"
-                      style={{ width: "70%" }}>
-                    </div>
-                  </div>
-                </div>
-              </div>
+
             </div>
           </div>
         </div>
       }
 
       <div className="row">
-        <div className="col-sm-6 col-md-6 col-lg-3 col-xl-2 col-12 mb-2">
+        {/* <div className="col-sm-6 col-md-6 col-lg-3 col-xl-2 col-12 mb-2">
           <TextField
             InputProps={{ className: 'custom-input' }}
             className="custom-textfield"
             id="outlined-basic"
-            label="Organization Name"
+            label="Department Name"
             variant="outlined"
             style={{ width: "100%" }}
           />
@@ -552,38 +594,45 @@ const Incident = () => {
         </div>
         <div className="col-sm-6 col-md-6 col-lg-3 col-xl-2 col-12 mb-2">
           <Button variant="fw-bold " className='search_btn'>Search</Button>
-        </div>
+        </div> */}
 
 
 
-        <div className="mt-2">
+        <div className="table-responsive-container">
 
-          <Paper className='tbl' sx={{ width: '100%', overflow: 'hidden' }}>
-            <TableContainer className='tablescroll-mobile'>
-              <Table stickyHeader aria-label="sticky table" sx={{ minWidth: 650 }}>
+          <Paper className='tbl mt-2'
+          // sx={{ width: '100%', overflow: 'hidden' }}
+          >
+            <TableContainer className='tablescroll-mobile' sx={{ overflowX: 'auto' }}>
+              <Table stickyHeader res aria-label="sticky table"
+              // sx={{ minWidth: 650 }}
+
+              >
                 <TableHead>
                   <TableRow>
                     {columns.map((column) => (
-                      <TableCell
-                        key={column.id}
-                        align={column.align}
-                        style={{ minWidth: column.minWidth }}
-                      >
-                        {column.label}
-                      </TableCell>
+                      !column.hidden && ( // Only render if column is not hidden
+                        <TableCell
+                          key={column.id}
+                          align={column.align}
+                          style={{ minWidth: column.minWidth }}
+                        >
+                          {column.label}
+                        </TableCell>
+                      )
                     ))}
                   </TableRow>
                 </TableHead>
-                {isLoading ?
-                  <div >Loading...</div>
-                  :
+                {isLoading ? (
+                  <div>Loading...</div>
+                ) : (
                   <TableBody>
-
                     {rows
                       .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
                       .map((row) => (
                         <StyledTableRow hover role="checkbox" tabIndex={-1} key={row.code}>
                           {columns.map((column) => {
+                            if (column.hidden) return null; // Skip hidden columns
                             const value = row[column.id];
                             if (column.id === 'status') {
                               return (
@@ -610,8 +659,7 @@ const Incident = () => {
                         </StyledTableRow>
                       ))}
                   </TableBody>
-                }
-
+                )}
               </Table>
             </TableContainer>
             <div>
@@ -629,7 +677,7 @@ const Incident = () => {
         </div>
       </div>
       {/* Ai promt diapog */}
-      <Dialog open={aiPromptOpen} onClose={handeClickAiPromptDialog}>
+      <Dialog maxWidth="sm" fullWidth open={aiPromptOpen} onClose={handeClickAiPromptDialog}>
         <DialogTitle className='dialog_head'>Create incident with AI prompt</DialogTitle>
         <DialogContent className='dialog_content'>
           {/* <AiPrompt /> */}
@@ -646,8 +694,9 @@ const Incident = () => {
           />
         </DialogContent>
         <DialogActions className='dialog_content'>
-          <Button className='accordian_submit_btn ' onClick={handeClickAiPromptDialog}>Cancel</Button>
-          <Button className='accordian_cancel_btn' onClick={createincidenthandler} color="primary">OK</Button>
+          <Button className='accordian_submit_btn' onClick={createincidenthandlerwithAiPrompt} color="primary">OK</Button>
+          <Button className=' accordian_cancel_btn' onClick={handeClickAiPromptDialog}>Cancel</Button>
+
         </DialogActions>
       </Dialog>
 
@@ -656,3 +705,5 @@ const Incident = () => {
 }
 
 export default Incident
+
+
