@@ -158,7 +158,7 @@ const Sidebar = ({ activeTab, setActiveTab, isOpen, setIsOpen, mobileOpen, handl
           }}
         >
           <Toolbar sx={{ justifyContent: "space-between", px: 2 }}>
-            <Typography variant="h6">RevPulse AI</Typography>
+            <Typography variant="h6">Renee</Typography>
             <IconButton onClick={handleMobileToggle}><ChevronLeft /></IconButton>
           </Toolbar>
           <Divider />

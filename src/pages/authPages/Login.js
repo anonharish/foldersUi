@@ -255,7 +255,7 @@ const {login} = useAuth();
                       py: 1.5,
                     }}
                   >
-                    Log In to revPlus AI
+                    Log In to Renee
                   </Button>
                 )}
               </Box>
