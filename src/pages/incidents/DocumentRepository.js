@@ -2,12 +2,16 @@ import React, { useState, useEffect } from 'react';
 import { Search, Upload, Folder, File, ChevronRight, ChevronDown, X, MessageCircle, Trash2 } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Modal, Button } from 'react-bootstrap';
+import { Autocomplete, TextField, Typography } from '@mui/material';
+import FileFolderCard from '../../componnets/FileFolderCard';
 
 const DocumentRepository = () => {
     const navigate = useNavigate();
     const location = useLocation();
     const searchedFileName = location.state?.searchedFileName;
     const [fileNotFound, setFileNotFound] = useState(false);
+
+
 
     // Initial folders structure
     const initialFolders = [
@@ -30,6 +34,14 @@ const DocumentRepository = () => {
                     uploadedAt: new Date().toISOString(),
                     url: '#',
                 },
+                {
+                    id: "file2",
+                    name: "Summary.docx",
+                    size: 2048,
+                    type: "application/msword",
+                    uploadedAt: new Date().toISOString(),
+                    url: "#",
+                },
             ],
             parentId: null,
             isExpanded: true,
@@ -48,7 +60,13 @@ const DocumentRepository = () => {
     const [showAISearch, setShowAISearch] = useState(false);
     const [showAddFolderModal, setShowAddFolderModal] = useState(false);
     const [newFolderName, setNewFolderName] = useState('');
+    const [activeFolder, setActiveFolder] = useState(null);
 
+    const sortOptions = [
+        { label: 'Last Viewed', value: 'lastViewed' },
+        { label: 'Edited', value: 'edited' }
+    ];
+    const [sortBy, setSortBy] = useState(sortOptions[0]);
     useEffect(() => {
         if (searchedFileName) {
             let fileFound = false;
@@ -232,8 +250,22 @@ const DocumentRepository = () => {
             .filter(file => file.name.toLowerCase().includes(searchTerm.toLowerCase()));
     };
 
+
+    const folderss = [
+        { id: 1, type: "folder", name: "Vrinda" },
+        { id: 2, type: "folder", name: "src" },
+        { id: 3, type: "folder", name: "siri" },
+        { id: 4, type: "folder", name: "project2" },
+    ];
+
+    const files = [
+        { id: 5, type: "file", name: "Untitled spreadsheet" },
+        { id: 6, type: "file", name: "Untitled document" },
+        { id: 7, type: "file", name: "Untitled diagram" },
+    ];
+
     return (
-        <div className="p-4">
+        <div className="p-4 ">
             {fileNotFound && searchedFileName && (
                 <div className="alert alert-warning mb-4" role="alert">
                     The file "{searchedFileName}" was not found in the repository.
@@ -242,8 +274,8 @@ const DocumentRepository = () => {
 
             <div className="mb-4 d-flex gap-2">
                 <div className="position-relative flex-grow-1">
-                    <Search className="position-absolute start-0 top-50 translate-middle-y text-muted" 
-                           style={{ width: '1.25rem', height: '1.25rem', marginLeft: '1rem' }} />
+                    <Search className="position-absolute start-0 top-50 translate-middle-y text-muted"
+                        style={{ width: '1.25rem', height: '1.25rem', marginLeft: '1rem' }} />
                     <input
                         type="text"
                         value={searchTerm}
@@ -260,7 +292,106 @@ const DocumentRepository = () => {
                     AI Search
                 </button>
             </div>
+            <div className="row align-items-center" style={{
+                border: '1px solid #c4c4c4',
+                borderRadius: '8px',
+                padding: "8px 12px",
+                background: 'white',
+                margin: "0px"
+            }}>
+                <div className="col-md-6">
+                    <span style={{ fontSize: "14px", color: "#333" }}>
+                        8 items
+                    </span>
+                </div>
+                <div className='col-md-6 d-flex justify-content-end'>
+                    <Autocomplete
+                        options={sortOptions}
+                        value={sortBy}
+                        onChange={(event, newValue) => setSortBy(newValue)}
+                        getOptionLabel={(option) => option.label}
+                        sx={{ width: 200 }}
+                        renderInput={(params) => (
+                            <TextField {...params} label="Sort By" size="small" style={{ backgroundColor: "transparent" }} />
+                        )}
+                    />
+                </div>
+            </div>
 
+            <div style={{ padding: "16px" }}>
+                {/* Folders Section */}
+                <Typography variant="h6" sx={{ mb: 2 }}>
+                   {activeFolder ?`Folders / ${activeFolder.name }`: "Folders"} 
+                </Typography>
+                <div>
+                    {!activeFolder ? (
+                        <>
+                          
+                            <div style={{ display: "flex", flexWrap: "wrap", gap: "16px" }}>
+                                {folders.map((folder) => (
+                                    <FileFolderCard
+                                        key={folder.id}
+                                        type="folder"
+                                        name={folder.name}
+                                        onClick={() => setActiveFolder(folder)} 
+                                    />
+                                ))}
+                            </div>
+                        </>
+                    ) : (
+                        <>
+                         
+
+                            {/* Back button */}
+                            <button
+                                style={{
+                                    marginBottom: "16px",
+                                    padding: "6px 12px",
+                                    borderRadius: "6px",
+                                    border: "1px solid #ccc",
+                                    cursor: "pointer",
+                                }}
+                                onClick={() => setActiveFolder(null)}
+                            >
+                                ← Back to Folders
+                            </button>
+
+                            <div style={{ display: "flex", flexWrap: "wrap", gap: "16px" }}>
+                                {activeFolder.files.length > 0 ? (
+                                    activeFolder.files.map((file) => (
+                                        <FileFolderCard
+                                            key={file.id}
+                                            type="file"
+                                            name={file.name}
+                                            size={`${Math.round(file.size / 1024)} KB`}
+                                            date={new Date(file.uploadedAt).toLocaleDateString()}
+                                        />
+                                    ))
+                                ) : (
+                                    <Typography variant="body2" color="text.secondary">
+                                        No files inside this folder.
+                                    </Typography>
+                                )}
+                            </div>
+                        </>
+                    )}
+                </div>
+                {/* Files Section */}
+                <Typography variant="h6" sx={{ mt: 4, mb: 2 }}>
+                    Files
+                </Typography>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: "16px" }}>
+                    {files.map((file) => (
+                        <FileFolderCard
+                            key={file.id}
+                            type="file"
+                            name={file.name}
+                            onClick={() => console.log("Open file:", file.name)}
+                        />
+                    ))}
+                </div>
+            </div>
+            {/* 
             <div className="row">
                 <div className="col-md-4 mb-4">
                     <div className="border rounded p-3">
@@ -308,9 +439,8 @@ const DocumentRepository = () => {
                                 {getFilteredFiles().map(file => (
                                     <div
                                         key={file.id}
-                                        className={`d-flex align-items-center gap-3 list-group-item list-group-item-action ${
-                                            searchedFileName === file.name ? 'bg-light' : ''
-                                        }`}
+                                        className={`d-flex align-items-center gap-3 list-group-item list-group-item-action ${searchedFileName === file.name ? 'bg-light' : ''
+                                            }`}
                                     >
                                         <File className="text-muted" style={{ width: '1.25rem', height: '1.25rem' }} />
                                         <div className="flex-grow-1">
@@ -367,7 +497,7 @@ const DocumentRepository = () => {
                         OK
                     </Button>
                 </Modal.Footer>
-            </Modal>
+            </Modal> */}
         </div>
     );
 };

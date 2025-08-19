@@ -3,6 +3,7 @@ import { Box, CssBaseline, useMediaQuery } from "@mui/material";
 import { Outlet, useLocation } from "react-router-dom";
 import Header from "./Header";
 import Sidebar from "./Sidebar";
+import DocumentRepository from "../pages/incidents/DocumentRepository";
 
 
 const AppLayout = () => {
@@ -51,7 +52,7 @@ const AppLayout = () => {
           mb: 2,
         }}
       >
-        <Outlet />
+        <DocumentRepository/>
       </Box>
     </Box>
   );

@@ -488,7 +488,7 @@ ul {
 input {
   height: 56px;
   border-color: #c4c4c4 !important;
-  background-color: white !important;
+  /* background-color: white !important; */
   border-radius: 6px !important;
 }
 
