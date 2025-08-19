@@ -1,236 +1,206 @@
-import * as React from "react";
-import { useState, useEffect } from "react";
-import { styled, useTheme } from "@mui/material/styles";
-import Box from "@mui/material/Box";
-import MuiDrawer from "@mui/material/Drawer";
-import MuiAppBar from "@mui/material/AppBar";
-import CssBaseline from "@mui/material/CssBaseline";
-import { Divider } from "@mui/material";
-import { Link } from "react-router-dom";
-import { useLocation } from "react-router-dom";
-import MainRoutes from "../Routes/MainRoutes";
+import React from "react";
 import {
-    List,
-    ListItemButton,
-    ListItemIcon,
-    ListItemText,
+  List,
+  ListItemButton,
+  ListItemIcon,
+  ListItemText,
+  Tooltip,
+  Typography,
+  IconButton,
+  useTheme,
+  useMediaQuery,
+  Drawer,
+  Toolbar,
+  Divider,
 } from "@mui/material";
-import IconButton from '@mui/material/IconButton';
-import ChevronRightIcon from '@mui/icons-material/ChevronRight';
-import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
-import PersonAddAltIcon from '@mui/icons-material/PersonAddAlt';
-import Header from "./Header";
-import './Sidebar.css';
-import HomeIcon from '@mui/icons-material/Home';
+import {
+  ChevronLeft,
+  ChevronRight,
+  Home,
+  AccessTime,
+  Star,
+  Delete,
+} from "@mui/icons-material";
+import { useLocation, Link } from "react-router-dom";
 
-import Home from '../assets/images/HomeIcon.png';
-import Incident from '../assets/images/Incident.png';
-import ReportProblemIcon from '@mui/icons-material/ReportProblem';
-import FolderOpenIcon from "@mui/icons-material/FolderOpen";
+const drawerWidth = 240;
+const closedDrawerWidth = 80;
+const menuItems = [
+  {
+    id: "home",
+    label: "Home",
+    icon: Home,
+    color: "#3b54b0",
+  },
+  {
+    id: "recent",
+    label: "Recent",
+    icon: AccessTime,
+    color: "#ea641f",
+  },
+  {
+    id: "starred",
+    label: "Starred",
+    icon: Star,
+    color: "#facc15", 
+  },
+  {
+    id: "deleted",
+    label: "Deleted",
+    icon: Delete,
+    color: "#ef4444",
+  },
+];
 
+const DrawerContent = ({ isOpen, setActiveTab, handleMobileToggle }) => {
+  const location = useLocation();
+  return (
+    <List sx={{ px: 1 }}>
+      {menuItems.map((item) => {
+        const Icon = item.icon;
+        const isParent = !!item.children;
+        const selected = location.pathname === `/${item.id}`;
 
+        if (isParent) {
+          return (
+            <React.Fragment key={item.id}>
+              <ListItemButton
+                selected={location.pathname === `/${item.id}`}
+                sx={{
+                  justifyContent: isOpen ? "initial" : "center",
+                  px: 2,
+                  py: 1.2,
+                  my: 0.5,
+                  borderRadius: 2,
+                  backgroundColor: "white",
+                  color: "#111827",
+                  fontWeight:  500,
+                  "&:hover": { backgroundColor: "white" },
+                }}
+              >
+                <Tooltip title={!isOpen ? item.label : ""} placement="right">
+                  <ListItemIcon
+                    sx={{
+                      minWidth: 0,
+                      mr: isOpen ? 2 : "auto",
+                      justifyContent: "center",
+                      color: item.color,
+                      "& svg": { fontSize: isOpen ? 26 : 22 },
+                    }}
+                  >
+                    <Icon />
+                  </ListItemIcon>
+                </Tooltip>
+              </ListItemButton>
+            </React.Fragment>
+          );
+        }
 
+        return (
+          <ListItemButton
+            key={item.id}
+            component={Link}
+            to={`/${item.id}`}
+            onClick={() => { setActiveTab(item.id); if (window.innerWidth < 600) handleMobileToggle(); }}
+            selected={selected}
+            sx={{
+              justifyContent: isOpen ? "initial" : "center",
+              px: 2.5,
+              py: 1.2,
+              my: 0.5,
+              borderRadius: 2,
+              backgroundColor: selected ? "#3b54b0 !important" : "transparent",
+              color: selected ? "#fff" : "#111827",
+              fontWeight: selected ? 600 : 500,
+              "&:hover": { backgroundColor: selected ? "#3b54b0 !important" : "transparent" },
+            }}
+          >
+            <Tooltip title={!isOpen ? item.label : ""} placement="right">
+              <ListItemIcon
+                sx={{
+                  minWidth: 0,
+                  mr: isOpen ? 2 : "auto",
+                  justifyContent: "center",
+                  color: selected ? "#fff" : item.color,
+                }}
+              >
+                <Icon />
+              </ListItemIcon>
+            </Tooltip>
+            {isOpen && (
+              <ListItemText
+                primary={item.label}
+                primaryTypographyProps={{ fontWeight: 500, fontSize: "0.95rem" }}
+              />
+            )}
+          </ListItemButton>
+        );
+      })}
+    </List>
+  );
+};
 
+const Sidebar = ({ activeTab, setActiveTab, isOpen, setIsOpen, mobileOpen, handleMobileToggle }) => {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
 
-const drawerWidth = 260;
+  return (
+    <>
+      {isMobile && (
+        <Drawer
+          variant="temporary"
+          open={mobileOpen}
+          onClose={handleMobileToggle}
+          ModalProps={{ keepMounted: true }}
+          sx={{
+            width: mobileOpen ? drawerWidth : closedDrawerWidth,
+            "& .MuiDrawer-paper": { width: mobileOpen ? drawerWidth : closedDrawerWidth },
+          }}
+        >
+          <Toolbar sx={{ justifyContent: "space-between", px: 2 }}>
+            <Typography variant="h6">RevPulse AI</Typography>
+            <IconButton onClick={handleMobileToggle}><ChevronLeft /></IconButton>
+          </Toolbar>
+          <Divider />
+          <DrawerContent
+            isOpen={true}
+            activeTab={activeTab}
+            setActiveTab={setActiveTab}
+            handleMobileToggle={handleMobileToggle}
+          />
+        </Drawer>
+      )}
 
-const openedMixin = (theme) => ({
-    width: drawerWidth,
-    transition: theme.transitions.create("width", {
-        easing: theme.transitions.easing.sharp,
-        duration: theme.transitions.duration.enteringScreen,
-    }),
-    overflowX: "hidden",
-});
+      {!isMobile && (
+        <Drawer
+          variant="permanent"
+          open={isOpen}
+          sx={{
+            width: isOpen ? drawerWidth : closedDrawerWidth,
+            flexShrink: 0,
+            "& .MuiDrawer-paper": { width: isOpen ? drawerWidth : closedDrawerWidth, transition: "width 0.3s", overflowX: "hidden", boxSizing: "border-box" },
+          }}
+        >
+          <Toolbar sx={{ justifyContent: isOpen ? "space-between" : "center", display: "flex", alignItems: "center", px: 1, gap: 1 }}>
+            {isOpen && <img src={"/logoRenee.svg"} alt="healthCare" width={150} height={50} />}
+            <IconButton onClick={() => setIsOpen(!isOpen)}>
+              {isOpen ? <ChevronLeft /> : <>
+                <img src={"/reneeLogo.png"} alt="healthCare" width={30} height={30} />
+                <ChevronRight />
+              </>}
+            </IconButton>
+          </Toolbar>
+          <Divider />
+          <DrawerContent
+            isOpen={isOpen}
+            activeTab={activeTab}
+            setActiveTab={setActiveTab}
+            handleMobileToggle={handleMobileToggle}
+          />
+        </Drawer>
+      )}
+    </>
+  );
+};
 
-const closedMixin = (theme) => ({
-    transition: theme.transitions.create("width", {
-        easing: theme.transitions.easing.sharp,
-        duration: theme.transitions.duration.leavingScreen,
-    }),
-    overflowX: "hidden",
-    width: `calc(${theme.spacing(5)} + 1px)`,
-    [theme.breakpoints.up("sm")]: {
-        width: `calc(${theme.spacing(7)} + 1px)`,
-    },
-});
-
-const DrawerHeader = styled("div")(({ theme }) => ({
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "flex-end",
-    padding: theme.spacing(0, 1),
-    ...theme.mixins.toolbar,
-}));
-
-const AppBar = styled(MuiAppBar, {
-    shouldForwardProp: (prop) => prop !== "open",
-})(({ theme, open }) => ({
-    zIndex: theme.zIndex.drawer + 1,
-    transition: theme.transitions.create(["width", "margin"], {
-        easing: theme.transitions.easing.sharp,
-        duration: theme.transitions.duration.leavingScreen,
-    }),
-    ...(open && {
-        marginLeft: drawerWidth,
-        width: `calc(100% - ${drawerWidth}px)`,
-        transition: theme.transitions.create(["width", "margin"], {
-            easing: theme.transitions.easing.sharp,
-            duration: theme.transitions.duration.enteringScreen,
-        }),
-    }),
-}));
-
-const Drawer = styled(MuiDrawer, {
-    shouldForwardProp: (prop) => prop !== "open",
-})(({ theme, open }) => ({
-    width: drawerWidth,
-    flexShrink: 0,
-    whiteSpace: "nowrap",
-    boxSizing: "border-box",
-    ...(open && {
-        ...openedMixin(theme),
-        "& .MuiDrawer-paper": openedMixin(theme),
-    }),
-    ...(!open && {
-        ...closedMixin(theme),
-        "& .MuiDrawer-paper": closedMixin(theme),
-    }),
-}));
-
-export default function Sidebar() {
-    const theme = useTheme();
-    const [open, setOpen] = React.useState(false);
-    const [sidebarOpen, setSidebarOpen] = useState(false);
-
-    const location = useLocation();
-    const { pathname } = location;
-
-    const shouldHideDrawer = pathname === "/" || pathname === "/forgotPassword";
-
-    const userID = localStorage.getItem('userTypeId')
-    console.log(userID)
-
-    const SidebarItems = [
-        {
-            label: "Dashboard",
-            path: "/incident/dashboard",
-            icon: <HomeIcon />
-
-        },
-        {
-            label: "Incident",
-            path: "/incident",
-            icon: <ReportProblemIcon />
-        },
-        // {
-        //     label: "Users",
-        //     path: "/admin/pannel",
-        //     icon: <PersonAddAltIcon />
-        // },
-        ...(userID == 1 ? [{
-            label: "Users",
-            path: "/admin/pannel",
-            icon: <PersonAddAltIcon />
-        }] : []),
-        //  {
-        //      label: "Document Repository",
-        //      path: "/document/repository",
-        //      icon: <FolderOpenIcon />
-        //  }
-    ];
-
-
-    const handleDrawerOpen = () => {
-        setOpen(!open);
-    };
-    const handleToggleDrawer = () => {
-        setOpen(!open);
-    };
-
-    const handleDrawerClose = () => {
-        setOpen(false);
-    };
-
-
-
-
-    const handleSidebarToggle = () => {
-        console.log("handleSidebarToggle clicked");
-        setSidebarOpen(!sidebarOpen);
-    };
-
-    return !shouldHideDrawer ? (
-        <Box sx={{ display: "flex" }}>
-            <CssBaseline />
-            <Header onMenuClick={handleSidebarToggle} />
-            <div className="sidebar_collapse" >
-
-                <Drawer variant="permanent" open={open} className="">
-                    <IconButton
-                        color="inherit"
-                        aria-label="open drawer"
-                        // onClick={handleDrawerOpen}
-                        onClick={() => setOpen(!open)}
-                        className='sidebar-arrow'
-                        edge="end"
-                    >
-                        {open ? <ChevronLeftIcon style={{ color: "#533529" }} /> : <ChevronRightIcon style={{ color: "#533529" }} />}
-                    </IconButton>
-                    <DrawerHeader />
-                    <Divider />
-                    <List sx={{ height: "100vh", backgroundColor: "#533529" }}>
-
-                        {SidebarItems.map((item, index) => (
-                            <div key={index}>
-                                <Link
-                                    to={item.path}
-                                    style={{
-                                        textDecoration: "none"
-                                    }}
-                                >
-                                    <ListItemButton
-                                        className={`side-menubar-text ${pathname === item.path ? "active" : ""}`}
-                                        sx={{
-                                            minHeight: 48,
-                                            justifyContent: open ? "initial" : "center",
-                                            px: 2.5,
-                                            bgcolor: pathname === item.path ? "#A9ECFF" : "transparent",
-                                        }}
-                                        selected={pathname === item.path}
-                                    >
-                                        <ListItemIcon
-                                            sx={{
-                                                minWidth: 0,
-                                                mr: open ? 3 : "auto",
-                                                justifyContent: "center",
-                                                color: pathname === item.path ? "#533529" : "white",
-                                            }}
-                                        >
-                                            {item.icon}
-                                        </ListItemIcon>
-                                        <ListItemText
-                                            primary={item.label}
-                                            sx={{
-                                                opacity: open ? 10 : 0,
-                                                color: pathname === item.path ? "#533529" : "white",
-                                            }}
-                                        />
-                                    </ListItemButton>
-                                </Link>
-                            </div>
-                        ))}
-                    </List>
-                    <Divider />
-                </Drawer>
-            </div>
-
-            <Box component="main" sx={{ flexGrow: 1, p: 3, }}>
-                <DrawerHeader />
-                <MainRoutes />
-            </Box>
-        </Box>
-    ) : (
-        <MainRoutes />
-    );
-}
+export default Sidebar;

@@ -127,11 +127,6 @@ header h3 {
   border-radius: 0 17px 0 0;
 }
 
-.css-12i7wg6-MuiPaper-root-MuiDrawer-paper {
-  top: 105px !important;
-  border-radius: 0 16px 0 0;
-  border-top: 1px solid #ddd;
-}
 
 .sidebar-arrow {
   width: 32px;
@@ -182,11 +177,7 @@ header h3 {
   flex: 1;
 }
 
-.css-12i7wg6-MuiPaper-root-MuiDrawer-paper {
-  top: 67px !important;
-  border-radius: 0 16px 0 0;
-  border-top: 1px solid #ddd;
-}
+
 
 
 /*  incident*/
@@ -416,7 +407,7 @@ ul {
 
 .history_bg {
   align-items: center;
-  background: #83472f;
+  background:#83472f;
   border-radius: 50%;
   display: flex;
   flex-shrink: 0;
@@ -521,16 +512,6 @@ input {
 .css-s0ns04-MuiAutocomplete-root .MuiOutlinedInput-root,
 .css-ka7ti6-MuiAutocomplete-root .MuiOutlinedInput-root
 
-/* .css-o9k5xi-MuiInputBase-root-MuiOutlinedInput-root  */
-  {
-  background-color: white !important;
-}
-
-/* .css-o9k5xi-MuiInputBase-root-MuiOutlinedInput-root {
-color: white !important;
-} */
-
-
 .add-Field-btn {
   font-weight: bold !important;
   float: right !important;
@@ -580,9 +561,8 @@ color: white !important;
   background-color: #533529 !important;
   color: white !important;
 }
-
-.accordian_tbl_txt {
-  color: brown !important;
+.accordian_tbl_txt{
+  color:brown !important;
   font-weight: 600 !important;
   font-family: "Montserrat", sans-serif !important;
   text-align: center !important;
@@ -600,8 +580,7 @@ color: white !important;
   line-height: 21px !important;
   cursor: pointer !important;
 }
-
-.accordian_row {
+.accordian_row{
   display: flex;
   align-items: baseline;
 }
@@ -669,7 +648,6 @@ div.modal_bg_body .modal-body {
   color: white !important;
   border: 1px solid white !important
 }
-
 .calendar_align .css-nxo287-MuiInputBase-input-MuiOutlinedInput-input {
   padding: 14px 14px;
   color: white !important;
@@ -789,20 +767,16 @@ h4 {
 .accordian_arrow {
   color: white;
 }
-
-.checkbox_color {
-  color: brown !important
+.checkbox_color{
+  color:brown !important
 }
-
 .dialog_head {
   background-color: #533529;
   color: white;
 }
-
-.dialog_content {
+.dialog_content{
   background-color: #f6f6f6;
 }
-
 .custom-textfield {
   font-size: 12px;
   /* Adjust the font size as needed */
@@ -817,7 +791,6 @@ h4 {
   padding: 6px 10px !important;
   /* Adjust the padding as needed */
 }
-
 .custom-input-drop .MuiInputBase-input {
   height: 16px;
   /* Adjust the height as needed */
@@ -827,7 +800,6 @@ h4 {
   padding: 6px 10px !important;
   /* Adjust the padding as needed */
 }
-
 .brown-menu .MuiPaper-root {
   background-color: #FFF8DC;
   /* Cornsilk color */
@@ -835,7 +807,7 @@ h4 {
 }
 
 .brown-menu-item:hover {
-  background-color: #533529 !important;
+  background-color: #533529 !important; 
   color: white;
 }
 
@@ -863,61 +835,49 @@ h4 {
   flex-direction: column;
   height: 100%;
 }
-
 .drawer-header {
   background-color: #533529;
   /* Brown color */
 }
-
 .drawer-body {
   flex-grow: 1;
   overflow-y: auto;
 }
-
 .drawer-footer {
   background-color: #f4f4f4;
   display: flex;
   justify-content: flex-end;
 }
-
 .modal-bg-body {
   background-color: #fff8f0;
 }
-
-.ticket-chat .ticket-chat-body .created-tickets-info li .ticket-created-user .user-name h5 {
+.ticket-chat .ticket-chat-body .created-tickets-info li .ticket-created-user .user-name h5{
   font-size: 15px;
   font-weight: 500;
 }
-
-.ticket-chat .ticket-chat-body .created-tickets-info li .ticket-created-user .user-name h5 span {
+.ticket-chat .ticket-chat-body .created-tickets-info li .ticket-created-user .user-name h5 span{
   font-weight: 600;
 }
-
-.ticket-chat .ticket-chat-body .created-tickets-info li .ticket-created-info h6 {
+.ticket-chat .ticket-chat-body .created-tickets-info li .ticket-created-info h6{
   margin-bottom: 5px;
 }
-
 .ticket-chat .ticket-chat-body .created-tickets-info li .ticket-created-info p {
   font-size: 14px;
   margin-bottom: 10px;
 }
-
 .ticket-chat .ticket-chat-body .created-tickets-info li .ticket-created-info .comment-text {
   color: #fc6075;
 }
-
 a {
 
   cursor: pointer;
   outline: none;
   text-decoration: none;
 }
-
 .ticket-chat .ticket-chat-body .created-tickets-info li .details-text {
   font-size: 14px;
   margin-top: 10px;
 }
-
 .attached-files ul {
   list-style-type: none;
   padding: 0;
@@ -946,7 +906,7 @@ a {
   text-decoration: underline;
 }
 
-.close_icon {
+.close_icon{
   color: red
 }
 

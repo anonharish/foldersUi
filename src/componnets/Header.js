@@ -1,272 +1,164 @@
-import React, { useState, useEffect } from 'react';
-import { useLocation, useNavigate, Link } from 'react-router-dom';
+import React, { useState, useEffect } from "react";
 import {
-  Box,
+  AppBar,
+  Toolbar,
   IconButton,
-  Badge,
-  Menu,
-  MenuItem,
-  Card,
-  CardContent,
+  Avatar,
+  Box,
   Typography,
-  Drawer,
-  List,
-  ListItemButton,
-  ListItemIcon,
-  ListItemText,
-  Tooltip
-} from '@mui/material';
-import MenuIcon from '@mui/icons-material/Menu';
-import AccountCircle from '@mui/icons-material/AccountCircle';
-import MailIcon from '@mui/icons-material/Mail';
-import NotificationsIcon from '@mui/icons-material/Notifications';
-import HomeIcon from '@mui/icons-material/Home';
-import ReportProblemIcon from '@mui/icons-material/ReportProblem';
-import PersonAddAltIcon from '@mui/icons-material/PersonAddAlt';
-import axios from 'axios';
-import { getNotifications } from '../api';
-import williamslogo from '../assets/images/williamslogo.jpeg';
-import FolderOpenIcon from "@mui/icons-material/FolderOpen";
+  useMediaQuery,
+  useTheme,
+  Popper,
+  Paper,
+  Divider,
+  Button,
+  Fade,
+  InputBase
+} from "@mui/material";
+import {
+  AccountCircle,
+  ArrowBack,
+  Logout,
+  Menu as MenuIcon,
+  Search as SearchIcon
+} from "@mui/icons-material";
+import { useLocation, useNavigate } from "react-router-dom";
+import { keyframes } from "@emotion/react";
 
-import { useGlobalState } from '../contexts/GlobalStateContext';
+const slideIn = keyframes`
+  from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: translateY(0); }
+`;
 
-function Header() {
-  const { notifications } = useGlobalState();
+const Header = ({ isSidebarOpen, currentTab, onSidebarToggle }) => {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
   const navigate = useNavigate();
-  const [anchorEl, setAnchorEl] = useState(null);
-  const [mobileMoreAnchorEl, setMobileMoreAnchorEl] = useState(null);
-  const [notificationsAnchorEl, setNotificationsAnchorEl] = useState(null); // New state for notifications
-  const [open, setOpen] = useState(false);
-  const [notifiationData, setNotificationData] = useState([])
+  const location = useLocation();
+  const { state } = location;
 
+  const [popperAnchorEl, setPopperAnchorEl] = useState(null);
+  const isPopperOpen = Boolean(popperAnchorEl);
+  const [searchValue, setSearchValue] = useState("");
 
-  const { pathname } = useLocation();
-  const handleProfileMenuClose = () => {
-    setAnchorEl(null);
-  };
-
-  const handleLogout = () => {
-    // Clear specific items from local storage
-    localStorage.removeItem('keepLoggedIn');
-    localStorage.removeItem('userDetails');
-
-    handleProfileMenuClose();
-    navigate('/');
-
-  }
-
-
-  const renderProfileMenu = (
-    <Menu
-      anchorEl={anchorEl}
-      open={Boolean(anchorEl)}
-      onClose={handleProfileMenuClose}
-      anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
-      transformOrigin={{ vertical: 'top', horizontal: 'right' }}
-      sx={{ mt: 4 }}
-    >
-      {/* <MenuItem onClick={handleProfileMenuClose}>Profile</MenuItem>
-      <MenuItem onClick={handleProfileMenuClose}>My Account</MenuItem> */}
-      <MenuItem onClick={() => {
-        handleLogout();
-        // Add logout functionality if needed
-      }}>Logout</MenuItem>
-    </Menu>
-  );
-
-  const userID = localStorage.getItem('userTypeId')
-  console.log(userID)
-
-  const SidebarItems = [
-    { label: "Dashboard", path: "/incident/dashboard", icon: <HomeIcon /> },
-    { label: "Incident", path: "/incident", icon: <ReportProblemIcon /> },
-    // { label: "Users", path: "/admin/pannel", icon: <PersonAddAltIcon /> }
-    ...(userID == 1 ? [{
-      label: "Users",
-      path: "/admin/pannel",
-      icon: <PersonAddAltIcon />
-    }] : []),
-     {
-       label: "Document Repository",
-       path: "/document/repository",
-       icon: <FolderOpenIcon />
-     }
-  ];
+  const handleAvatarClick = (event) => setPopperAnchorEl(popperAnchorEl ? null : event.currentTarget);
+  const handleClosePopper = () => setPopperAnchorEl(null);
+  const handleProfile = () => { handleClosePopper(); navigate("/profile"); };
+  const handleLogout = () => { handleClosePopper(); navigate("/login"); };
+  const handleNotificationsClick = () => navigate("/notifications");
 
   useEffect(() => {
-    // fetchNotifications();
-  }, []);
+    const handleClickOutside = (event) => {
+      if (popperAnchorEl && !popperAnchorEl.contains(event.target)) handleClosePopper();
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [popperAnchorEl]);
 
-
-
-  // const fetchNotifications = async () => {
-  //   try {
-  //     const response = await axios.post(getNotifications);
-  //     const data = response.data.notificationsList;
-  //     const formattedNotifications = data.map((notification) => ({
-  //       id: notification.incidentHistoryId,
-  //       incidentId: notification.incidentId,
-  //       message: notification.comments,
-  //       createdAt: notification.createdAt,
-  //       incidentRecord: notification.incidentRecord,
-  //       createdBy: notification.createdBy
-  //     }));
-  //     setNotificationData(formattedNotifications);
-  //   } catch (error) {
-  //     console.log('Error in fetching notifications:', error);
-  //   }
-  // };
-
-  // const handleProfileMenuOpen = (event) => {
-  //   setNotificationsAnchorEl(event.currentTarget);
-  // };
-
-  // const handleNotificationsMenuOpen = (event) => {
-  //   setNotificationsAnchorEl(event.currentTarget);
-  // };
-
-  // const handleNotificationsMenuClose = () => {
-  //   setNotificationsAnchorEl(null);
-  // };
-
-  const handleNotificationsMenuClose = () => {
-    setNotificationsAnchorEl(null);
+  const getInitials = (name) => {
+    const parts = name.split(" ");
+    return parts.length >= 2 ? parts[0][0] + parts[1][0] : name.slice(0, 2);
   };
-
-  const handleNotificationClick = (incidentId) => {
-    handleNotificationsMenuClose();
-    navigate(`/incident/details/${incidentId}`);
-  };
-
-  const renderNotificationsMenu = (
-    <Menu
-      anchorEl={notificationsAnchorEl}
-      open={Boolean(notificationsAnchorEl)}
-      onClose={handleNotificationsMenuClose}
-      anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
-      transformOrigin={{ vertical: 'top', horizontal: 'right' }}
-      sx={{ mt: 2, maxHeight: 500 }}
-    >
-      <Box sx={{ padding: 2, width: 350 }}>
-        <Typography variant="h6" sx={{ paddingBottom: 1, fontWeight: 'bold' }}>
-          Notifications
-        </Typography>
-        {notifications && notifications.length > 0 ? (
-          notifications.map((notification) => (
-            <MenuItem
-              key={notification.id}
-              onClick={() => handleNotificationClick(notification.incidentId)}
-              sx={{ padding: 0, marginBottom: 1 }}
-            >
-              <Card sx={{ width: '100%' }}>
-                <CardContent>
-                  <Typography variant="subtitle1" color="textSecondary" fontWeight="bold">
-                    {notification.incidentRecord}
-                  </Typography>
-
-                  <Tooltip title={notification.message} placement="top" arrow>
-                    <Typography
-                      variant="body2"
-                      color="textSecondary"
-                      sx={{
-                        marginBottom: 1,
-                        whiteSpace: 'nowrap',
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                        maxWidth: '100%',
-                      }}
-                    >
-                      {notification.message}
-                    </Typography>
-                  </Tooltip>
-
-                  <Box display="flex" justifyContent="space-between" alignItems="center">
-                    <Typography variant="caption" color="textSecondary">
-                      {new Date(notification.createdAt).toLocaleString()}
-                    </Typography>
-                    <Typography variant="caption" color="textSecondary">
-                      {notification.createdBy || 'Unknown'}
-                    </Typography>
-                  </Box>
-                </CardContent>
-              </Card>
-            </MenuItem>
-          ))
-        ) : (
-          <MenuItem onClick={handleNotificationsMenuClose}>No new notifications</MenuItem>
-        )}
-      </Box>
-    </Menu>
-  );
-
-  const DrawerList = (
-    <Box sx={{ width: 200, height: "100vh", backgroundColor: "#533529" }} role="presentation" onClick={() => setOpen(false)}>
-      <List>
-        {SidebarItems.map((item, index) => (
-          <Link key={index} to={item.path} style={{ textDecoration: "none" }}>
-            <ListItemButton
-              className={`side-menubar-text ${pathname === item.path ? "active" : ""}`}
-              sx={{ minHeight: 48, justifyContent: "center", px: 2.5, bgcolor: pathname === item.path ? "#A9ECFF" : "transparent" }}
-              selected={pathname === item.path}
-            >
-              <ListItemIcon sx={{ minWidth: 0, justifyContent: "center", color: pathname === item.path ? "#533529" : "white" }}>
-                {item.icon}
-              </ListItemIcon>
-              <ListItemText primary={item.label} sx={{ color: pathname === item.path ? "#533529" : "white" }} />
-            </ListItemButton>
-          </Link>
-        ))}
-      </List>
-    </Box>
-  );
-
-  const handleProfileMenuOpen = (event) => {
-    setAnchorEl(event.currentTarget);
-  };
-
-  const handleNotificationsMenuOpen = (event) => {
-    setNotificationsAnchorEl(event.currentTarget);
-  };
-
 
   return (
-    <header className='shadow-sm'>
-      <div className='col-md-12 d-flex justify-content-between'>
-        <IconButton color="inherit" onClick={() => setOpen(true)} className='sidebar-arrow-mbl'>
-          <MenuIcon />
-        </IconButton>
-
-        <div className='col-md-6 d-flex header-mobi'>
-          <img src={williamslogo} style={{ height: "45px" }} className='william_logo_responsive' alt="Logo" />
-        </div>
-
-        <Box className='head_right_icons' sx={{ display: { xs: 'none', md: 'flex' } }}>
-          {/* <IconButton size="large" aria-label="show 4 new mails" color="inherit">
-            <Badge badgeContent={4} color="error">
-              <MailIcon />
-            </Badge>
-          </IconButton> */}
-
-          <IconButton size="large" aria-label="show new notifications" color="inherit" onClick={handleNotificationsMenuOpen}>
-            <Badge badgeContent={notifications.length} color="error">
-              <NotificationsIcon />
-            </Badge>
-          </IconButton>
-
-          <IconButton size="large" edge="end" aria-label="account of current user" onClick={handleProfileMenuOpen} color="inherit">
-            <AccountCircle />
+    <AppBar
+      position="fixed"
+      elevation={0}
+      sx={{
+        backgroundColor: "white",
+        borderBottom: "1px solid #e5e7eb",
+        width: { xs: "100%", sm: `calc(100% - ${isSidebarOpen ? 240 : 60}px)` },
+        ml: { xs: 0, sm: `${isSidebarOpen ? 240 : 60}px` },
+        transition: "all 0.3s ease",
+      }}
+    >
+      <Toolbar
+        sx={{
+          flexWrap: "wrap",
+          gap: 1,
+          justifyContent: "space-between",
+          pl: isSidebarOpen ? (state ? "24px" : "6px") : "25px",
+          backgroundColor: "white",
+          animation: `${slideIn} 0.5s ease`,
+          minHeight: "44px !important"
+        }}
+      >
+        <Box display="flex" alignItems="center" gap={2}>
+          {isMobile && <IconButton onClick={onSidebarToggle}><MenuIcon /></IconButton>}
+          {state && (
+            <IconButton onClick={() => location.pathname.includes("updateUser") ? navigate("/users") : navigate("/dashboard")}>
+              <ArrowBack fontSize="small" />
+            </IconButton>
+          )}
+        </Box>
+        <Box flexGrow={1} mx={2} display="flex" justifyContent="center">
+          <Paper
+            component="form"
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              width: { xs: "100%", sm: "60%" },
+              p: "0px 2px",
+              borderRadius: 2,
+              boxShadow: "0 1px 3px rgba(0,0,0,0.1)"
+            }}
+            onSubmit={(e) => e.preventDefault()}
+          >
+            <InputBase
+              sx={{ ml: 1, flex: 1 }}
+              placeholder="Search..."
+              value={searchValue}
+              onChange={(e) => setSearchValue(e.target.value)}
+              inputProps={{ "aria-label": "search" }}
+            />
+            <IconButton type="submit" sx={{ p: "10px" }}>
+              <SearchIcon />
+            </IconButton>
+          </Paper>
+        </Box>
+        <Box display="flex" alignItems="center" gap={1}>
+          <IconButton onClick={handleAvatarClick}>
+            <Avatar sx={{ width: 28, height: 28, fontSize: "0.875rem", background: "linear-gradient(to right, #3b54b0, #ea641f)" }}>
+              {"U"}
+            </Avatar>
           </IconButton>
         </Box>
-
-        {renderNotificationsMenu}
-        {renderProfileMenu}
-      </div>
-
-      <Drawer open={open} onClose={() => setOpen(false)} className='mblDrawer' style={{ position: "relative", top: "40px" }}>
-        {DrawerList}
-      </Drawer>
-    </header>
+      </Toolbar>
+      <Popper
+        open={isPopperOpen}
+        anchorEl={popperAnchorEl}
+        placement="bottom-end"
+        transition
+        disablePortal
+        modifiers={[{ name: "offset", options: { offset: [0, 8] } }]}
+      >
+        {({ TransitionProps }) => (
+          <Fade {...TransitionProps} timeout={200}>
+            <Paper sx={{ p: 2, width: { xs: "90vw", sm: 300 }, maxWidth: 300, borderRadius: 2, backgroundColor: "#fff" }}>
+              <Box display="flex" alignItems="center" gap={2} mb={1}>
+                <Avatar sx={{ bgcolor: "#3b54b0", width: 48, height: 48, fontSize: 18 }}>{"U"}</Avatar>
+                <Box>
+                  <Typography fontWeight={600}>{"Unknown User"}</Typography>
+                  <Typography variant="body2" color="text.secondary">{"unknown@example.com"}</Typography>
+                  <Typography variant="caption" sx={{ color: "#ea641f", fontWeight: 500 }}>Admin</Typography>
+                </Box>
+              </Box>
+              <Divider sx={{ my: 1 }} />
+              <Box display="flex" flexDirection="column" gap={1}>
+                <Button startIcon={<AccountCircle />} onClick={handleProfile} fullWidth sx={{ justifyContent: "flex-start", textTransform: "none", color: "text.primary" }}>
+                  My Profile
+                </Button>
+                <Divider />
+                <Button startIcon={<Logout />} onClick={handleLogout} fullWidth sx={{ justifyContent: "flex-start", textTransform: "none", color: "#ea641f", "&:hover": { backgroundColor: "#f4dabe" } }}>
+                  Sign out
+                </Button>
+              </Box>
+            </Paper>
+          </Fade>
+        )}
+      </Popper>
+    </AppBar>
   );
-}
+};
 
 export default Header;
