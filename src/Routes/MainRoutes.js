@@ -1,105 +1,62 @@
-import React from 'react'
-import { Route, Routes } from 'react-router-dom'
-import Incident from '../pages/incidents/Incident';
-import CreateIncident from '../pages/incidents/CreateIncident';
-import IncidentDetails from '../pages/incidents/IncidentDetails';
-import User from '../pages/users/User';
-import AddUser from '../pages/users/AddUser';
-import Login from '../pages/auth/Login';
-import Forgot from '../pages/auth/Forgot';
-import ProtectedRoute from './ProtectedRoute ';
-import IncidentDashboard from '../pages/IncidentDashboard';
-import DocumentRepository from '../pages/incidents/DocumentRepository';
-import AISearchDashboard from '../componnets/incidents/AISearch';
-import Dashboard from '../pages/incidents/Dashboard';
+import React, { lazy } from "react";
+import { Navigate } from "react-router-dom";
+import AppLayout from './../componnets/Applayout';
+import AuthGuard from "../componnets/Auth/AuthGuard";
+import GuestGuard from "../componnets/Auth/GuestGuard";
+import ForgotPassword from "../pages/authPages/ForgotPassword";
+import VerifyOtp from "../pages/authPages/VerifyOtp";
+import ResetPassword from "../pages/authPages/ResetPassword";
+import LoginPage from "../pages/authPages/Login";
 
 
 
-const MainRoutes = () => {
-  return (
-    <div>
-      <Routes>
-        {/* Protected Routes */}
-        <Route path='/incident/dashboard'
-          element={
-            <ProtectedRoute>
-              <Dashboard />
-            </ProtectedRoute>
-          }
-        />
-        <Route path='/incident/dashboard1'
-          element={
-            <ProtectedRoute>
+const IncidentDashboard = lazy(() => import('./../pages/IncidentDashboard'));
+const Incident = lazy(() => import('./../pages/incidents/Incident'));
+const CreateIncident = lazy(() => import('./../pages/incidents/CreateIncident'));
+const IncidentDetails = lazy(() => import('./../pages/incidents/IncidentDetails'));
+const User = lazy(() => import('./../pages/users/User'));
+const AddUser = lazy(() => import('./../pages/users/AddUser'));
+const DocumentRepository = lazy(() => import('./../pages/incidents/DocumentRepository'));
+const AISearchDashboard = lazy(() => import('./../componnets/incidents/AISearch'));
 
-              <IncidentDashboard />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path='/incident'
-          element={
-            <ProtectedRoute>
-              <Incident />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path='/incident/create'
-          element={
-            <ProtectedRoute>
-              <CreateIncident />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path='/incident/details/:id'
-          element={
-            <ProtectedRoute>
-              <IncidentDetails />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path='/admin/pannel'
-          element={
-            <ProtectedRoute>
-              <User />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path='/admin/pannel/adduser'
-          element={
-            <ProtectedRoute>
-              <AddUser />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path='/document/repository'
-          element={
-            // <ProtectedRoute>
-              <DocumentRepository />
-            // </ProtectedRoute>
-          }
-        />
-        <Route
-          path='/document/aiSearch'
-          element={
-            <ProtectedRoute>
-              <AISearchDashboard />
-            </ProtectedRoute>
-          }
-        />,
+export const privateRoutes = [
+  {
+    path: "/",
+    element: (
+      <AuthGuard>
+        <AppLayout />
+      </AuthGuard>
+    ),
+    children: [
+      { index: true, element: <Navigate to="/home" replace /> },
+
+      { path: "home", element: <IncidentDashboard/> },
+      { path: "incident", element: <Incident /> },
+      { path: "incident/create", element: <CreateIncident /> },
+      { path: "incident/details/:id", element: <IncidentDetails /> },
+
+      { path: "admin/pannel", element: <User /> },
+      { path: "admin/pannel/adduser", element: <AddUser /> },
+
+      { path: "document/repository", element: <DocumentRepository /> },
+      { path: "document/aiSearch", element: <AISearchDashboard /> },
+    ],
+  },
+];
+
+export const publicRoutes = [
+  {
+    path: "/login",
+    element: (
+      <GuestGuard>
+        <LoginPage />
+      </GuestGuard>
+    ),
+  },
+  { path: "/resetPassword", element: <GuestGuard><ResetPassword /></GuestGuard> },
+  { path: "/forgotPassword", element: <GuestGuard><ForgotPassword /></GuestGuard> },
+  { path: "/verify-otp", element: <GuestGuard><VerifyOtp /></GuestGuard> },
+];
 
 
-        {/* Public Routes */}
-        <Route path='/' element={<Login />} />
-        <Route path='/forgotPassword' element={<Forgot />} />
-      </Routes>
-    </div>
-  )
-}
-
-
-export default MainRoutes
+export const appRoutes = [...privateRoutes, ...publicRoutes];

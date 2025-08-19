@@ -24,6 +24,7 @@ import {
 } from "@mui/icons-material";
 import { useLocation, useNavigate } from "react-router-dom";
 import { keyframes } from "@emotion/react";
+import { useAuth } from "./Auth/useAuth";
 
 const slideIn = keyframes`
   from { opacity: 0; transform: translateY(-8px); }
@@ -32,6 +33,7 @@ const slideIn = keyframes`
 
 const Header = ({ isSidebarOpen, currentTab, onSidebarToggle }) => {
   const theme = useTheme();
+   const { logout, user } = useAuth();
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
   const navigate = useNavigate();
   const location = useLocation();
@@ -44,8 +46,8 @@ const Header = ({ isSidebarOpen, currentTab, onSidebarToggle }) => {
   const handleAvatarClick = (event) => setPopperAnchorEl(popperAnchorEl ? null : event.currentTarget);
   const handleClosePopper = () => setPopperAnchorEl(null);
   const handleProfile = () => { handleClosePopper(); navigate("/profile"); };
-  const handleLogout = () => { handleClosePopper(); navigate("/login"); };
-  const handleNotificationsClick = () => navigate("/notifications");
+  const handleLogout = () => { logout(); handleClosePopper(); navigate("/login"); };
+
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -86,7 +88,7 @@ const Header = ({ isSidebarOpen, currentTab, onSidebarToggle }) => {
         <Box display="flex" alignItems="center" gap={2}>
           {isMobile && <IconButton onClick={onSidebarToggle}><MenuIcon /></IconButton>}
           {state && (
-            <IconButton onClick={() => location.pathname.includes("updateUser") ? navigate("/users") : navigate("/dashboard")}>
+            <IconButton onClick={() => location.pathname.includes("updateUser") ? navigate("/users") : navigate("/home")}>
               <ArrowBack fontSize="small" />
             </IconButton>
           )}
@@ -119,7 +121,7 @@ const Header = ({ isSidebarOpen, currentTab, onSidebarToggle }) => {
         <Box display="flex" alignItems="center" gap={1}>
           <IconButton onClick={handleAvatarClick}>
             <Avatar sx={{ width: 28, height: 28, fontSize: "0.875rem", background: "linear-gradient(to right, #3b54b0, #ea641f)" }}>
-              {"U"}
+               {getInitials(user?.username || "U")}
             </Avatar>
           </IconButton>
         </Box>
@@ -135,12 +137,38 @@ const Header = ({ isSidebarOpen, currentTab, onSidebarToggle }) => {
         {({ TransitionProps }) => (
           <Fade {...TransitionProps} timeout={200}>
             <Paper sx={{ p: 2, width: { xs: "90vw", sm: 300 }, maxWidth: 300, borderRadius: 2, backgroundColor: "#fff" }}>
-              <Box display="flex" alignItems="center" gap={2} mb={1}>
-                <Avatar sx={{ bgcolor: "#3b54b0", width: 48, height: 48, fontSize: 18 }}>{"U"}</Avatar>
+                    <Box display="flex" alignItems="center" gap={2} mb={1}>
+                <Avatar
+                  sx={{
+                    bgcolor: "#3b54b0",
+                    width: 48,
+                    height: 48,
+                    fontSize: 18,
+                  }}
+                >
+                  {getInitials(user?.username || "U")}
+                </Avatar>
                 <Box>
-                  <Typography fontWeight={600}>{"Unknown User"}</Typography>
-                  <Typography variant="body2" color="text.secondary">{"unknown@example.com"}</Typography>
-                  <Typography variant="caption" sx={{ color: "#ea641f", fontWeight: 500 }}>Admin</Typography>
+                  <Typography fontWeight={600} sx={{ wordBreak: "break-word" }}>
+                    {user?.username || "Unknown User"}
+                  </Typography>
+
+                  <Typography
+                    variant="body2"
+                    color="text.secondary"
+                    sx={{ wordBreak: "break-word", whiteSpace: "normal" }}
+                  >
+                    {user?.username || "unknown@example.com"}
+                  </Typography>
+
+                  {user?.role && (
+                    <Typography
+                      variant="caption"
+                      sx={{ color: "#ea641f", fontWeight: 500 }}
+                    >
+                      {user.role}
+                    </Typography>
+                  )}
                 </Box>
               </Box>
               <Divider sx={{ my: 1 }} />
