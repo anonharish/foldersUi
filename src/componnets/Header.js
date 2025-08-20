@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { FolderPlus } from 'lucide-react';
+import { Plus  } from 'lucide-react';
 import {
   AppBar,
   Toolbar,
@@ -28,6 +28,7 @@ import { keyframes } from "@emotion/react";
 import { useAuth } from "./Auth/useAuth";
 import { setShowAddFolderModal } from "../Store/uploadSlice";
 import { useDispatch } from "react-redux";
+import AddNewFolderFileButton from "./AddNewFolderFileButton";
 
 const slideIn = keyframes`
   from { opacity: 0; transform: translateY(-8px); }
@@ -66,9 +67,6 @@ const Header = ({ isSidebarOpen, currentTab, onSidebarToggle }) => {
     return parts.length >= 2 ? parts[0][0] + parts[1][0] : name.slice(0, 2);
   };
 
-  const handleAddFolder = () => {
-    dispatch(setShowAddFolderModal(true));
-  };
 
   return (
     <AppBar
@@ -125,15 +123,9 @@ const Header = ({ isSidebarOpen, currentTab, onSidebarToggle }) => {
               <SearchIcon />
             </IconButton>
           </Paper>
+          <AddNewFolderFileButton/>
         </Box>
-        <Box>
-          <button
-            onClick={handleAddFolder}
-          >
-            <span style={{ marginRight: ".5rem" }}><FolderPlus size={18} /></span>
-            New
-          </button>
-        </Box>
+        
         <Box display="flex" alignItems="center" gap={1}>
           <IconButton onClick={handleAvatarClick}>
             <Avatar sx={{ width: 28, height: 28, fontSize: "0.875rem", background: "linear-gradient(to right, #3b54b0, #ea641f)" }}>
