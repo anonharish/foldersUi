@@ -478,7 +478,7 @@ const DocumentRepository = () => {
                                 ← Back to Folders
                             </button> */}
 
-                            <label className="btn btn-primary ms-2">
+                            {/* <label className="btn btn-primary ms-2">
                                 <Upload style={{ width: '1rem', height: '1rem' }} className="me-1" />
                                 {uploading ? "Uploading..." : "Upload File"}
                                 <input
@@ -488,7 +488,7 @@ const DocumentRepository = () => {
                                     onChange={handleFileUpload}
                                     disabled={uploading} // prevent multiple clicks
                                 />
-                            </label>
+                            </label> */}
 
                             <div style={{ display: "flex", flexWrap: "wrap", gap: "16px" }}>
                                 {/*  Show subfolders */}
