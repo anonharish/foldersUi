@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { FolderPlus } from 'lucide-react';
+import { Plus  } from 'lucide-react';
 import {
   AppBar,
   Toolbar,
@@ -125,15 +125,30 @@ const Header = ({ isSidebarOpen, currentTab, onSidebarToggle }) => {
               <SearchIcon />
             </IconButton>
           </Paper>
+          <Box>
+            <button
+              onClick={handleAddFolder}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                backgroundColor: 'white',
+                color: 'black',
+                border: 'none',
+                borderRadius: '20px',
+                padding: '10px 16px',
+                fontSize: '14px',
+                fontWeight: '500',
+                boxShadow: '0 1px 3px rgba(0,0,0, .5)',
+                marginLeft: '1rem',
+              }}
+            >
+              <span style={{ marginRight: '8px', display: 'flex', alignItems: 'center' }}><Plus size={25} /></span>
+              New
+            </button>
+          </Box>
         </Box>
-        <Box>
-          <button
-            onClick={handleAddFolder}
-          >
-            <span style={{ marginRight: ".5rem" }}><FolderPlus size={18} /></span>
-            New
-          </button>
-        </Box>
+        
         <Box display="flex" alignItems="center" gap={1}>
           <IconButton onClick={handleAvatarClick}>
             <Avatar sx={{ width: 28, height: 28, fontSize: "0.875rem", background: "linear-gradient(to right, #3b54b0, #ea641f)" }}>

@@ -305,9 +305,6 @@ const DocumentRepository = () => {
         );
     };
 
-    // const handleAddFolder = () => {
-    //     dispatch(setShowAddFolderModal(true));
-    // };
 
     const handleSaveNewFolder = () => {
         const newFolder = {
@@ -342,7 +339,7 @@ const DocumentRepository = () => {
     ];
 
 
-    console.log(activeFolder, "ACTIVEFOLDER")
+  
 
     const openFolder = (folder) => {
         setActiveFolder(folder);
