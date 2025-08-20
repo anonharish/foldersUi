@@ -28,7 +28,7 @@ import DescriptionIcon from "@mui/icons-material/Description";
 import TableChartIcon from "@mui/icons-material/TableChart";
 import InsertDriveFileIcon from "@mui/icons-material/InsertDriveFile";
 
-const FileFolderCard = ({ type, name, onClick, date, size, typeofFile, onRename, onDelete }) => {
+const FileFolderCard = ({ type, name, onClick, date, size, typeofFile, onRename, onDelete, handleViewClick, handleDownloadClick }) => {
   const [anchorEl, setAnchorEl] = useState(null);
   const [hovered, setHovered] = useState(false);
   const [renameDialogOpen, setRenameDialogOpen] = useState(false);
@@ -138,8 +138,8 @@ const handleDeleteConfirm = () => {
           {/* File actions: show only on hover */}
           {!isFolder && hovered && (
             <div style={{ display: "flex", justifyContent: "space-around", marginTop: "12px" }}>
-              <Button size="small" startIcon={<VisibilityIcon />} sx={{ color: "blue", fontSize: "10px" }} />
-              <Button size="small" startIcon={<FileDownloadOutlinedIcon />} sx={{ fontSize: "10px" }} />
+              <Button size="small" startIcon={<VisibilityIcon />} sx={{ color: "blue", fontSize: "10px" }} onClick={handleViewClick}/>
+              <Button size="small" startIcon={<FileDownloadOutlinedIcon />} sx={{ fontSize: "10px" }} onClick={handleDownloadClick}/>
               <Button size="small" startIcon={<DriveFileRenameOutlineIcon />} sx={{ fontSize: "10px" }} onClick={handleRenameClick} />
               <Button size="small" startIcon={<DeleteOutlineIcon />} sx={{ color: "red", fontSize: "10px" }} onClick={handleDeleteClick} />
             </div>

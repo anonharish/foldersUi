@@ -2,11 +2,15 @@ import React, { useState, useEffect } from 'react';
 import { Search, Upload, Folder, File, ChevronRight, ChevronDown, X, MessageCircle, Trash2, FolderPlus } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Modal, Button } from 'react-bootstrap';
-import { Autocomplete, TextField, Typography, Breadcrumbs, Link } from '@mui/material';
+import { Autocomplete, Box, IconButton, Divider, TextField, Typography, Breadcrumbs, Link, Dialog, DialogTitle, DialogContent, DialogActions } from '@mui/material';
 import FileFolderCard from '../../componnets/FileFolderCard';
 import { useDispatch, useSelector } from 'react-redux';
 import { setShowAddFolderModal } from '../../Store/uploadSlice';
 import NavigateNextIcon from "@mui/icons-material/NavigateNext";
+import CloseIcon from "@mui/icons-material/Close";
+import PictureAsPdfIcon from "@mui/icons-material/PictureAsPdf";
+import DescriptionIcon from "@mui/icons-material/Description";
+import ArticleIcon from "@mui/icons-material/Article";
 
 import { resetFolderPath, setFolderPath, addFolderToPath, setActiveFolder } from '../../Store/breadcrumbSlice';
 
@@ -132,7 +136,7 @@ const DocumentRepository = () => {
     const [newFolderName, setNewFolderName] = useState('');
     // const [activeFolder, setActiveFolder] = useState(null);
     const [uploading, setUploading] = useState(false);
-    // const [folderPath, setFolderPath] = useState([]);
+    const [previewFile, setPreviewFile] = useState(null);
 
 
     const sortOptions = [
@@ -398,8 +402,18 @@ const DocumentRepository = () => {
     };
 
 
-    console.log("activeFolder", activeFolder);
+    const handleViewClick = (file) => {
+        setPreviewFile(file);
+    }
 
+    const handleClosePreview = () => {
+        setPreviewFile(null)
+    }
+
+    const handleDownloadClick = (file) => {
+        // Implement file download logic here
+        console.log("Downloading file:", file.name);
+    }
     return (
         <div className="p-4 ">
             <Breadcrumbs aria-label="breadcrumb" sx={{ mb: 2 }} separator="›">
@@ -585,6 +599,8 @@ const DocumentRepository = () => {
                                                 dispatch(setActiveFolder(refreshed || null));
                                             }
                                         }}
+                                        handleViewClick={() => handleViewClick(file)}
+                                        handleDownloadClick={() => handleDownloadClick(file)}
                                     />
                                 ))}
                                 {activeFolder.files.length > 0 ? (
@@ -621,6 +637,8 @@ const DocumentRepository = () => {
                                                         dispatch(setActiveFolder(refreshed || null));
                                                     }
                                                 }}
+                                                handleViewClick={() => handleViewClick(file)}
+                                                handleDownloadClick={() => handleDownloadClick(file)}
                                             />
                                         </div>
                                     ))
@@ -658,6 +676,8 @@ const DocumentRepository = () => {
                                 );
                                 setFilesIntial(updatedFiles);
                             }}
+                            handleViewClick={() => handleViewClick(file)}
+                            handleDownloadClick={() => handleDownloadClick(file)}
                         />
                     ))}
                 </div>
@@ -718,6 +738,106 @@ const DocumentRepository = () => {
                     </Button>
                 </Modal.Footer>
             </Modal>
+
+
+            <Dialog
+                open={Boolean(previewFile)}
+                onClose={handleClosePreview}
+                maxWidth="md"
+                fullWidth
+                PaperProps={{
+                    sx: { borderRadius: 3, overflow: "hidden" },
+                }}
+            >
+                {/* Header */}
+                <DialogTitle
+                    sx={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        bgcolor: "#f5f5f5",
+                        px: 3,
+                        py: 2,
+                    }}
+                >
+                    <Box display="flex" alignItems="center" gap={1}>
+                        {previewFile?.typeofFile === "pdf" ? (
+                            <PictureAsPdfIcon color="error" />
+                        ) : previewFile?.typeofFile === "txt" ? (
+                            <ArticleIcon color="primary" />
+                        ) : (
+                            <DescriptionIcon color="action" />
+                        )}
+                        <Typography variant="h6" noWrap>
+                            {previewFile?.name}
+                        </Typography>
+                    </Box>
+                    <IconButton onClick={handleClosePreview}>
+                        <CloseIcon />
+                    </IconButton>
+                </DialogTitle>
+
+                <Divider />
+
+                {/* Content */}
+                <DialogContent
+                    dividers
+                    sx={{
+                        bgcolor: "background.default",
+                        minHeight: "400px",
+                        display: "flex",
+                        justifyContent: "center",
+                        alignItems: "center",
+                    }}
+                >
+                    {previewFile?.typeofFile === "pdf" ? (
+                        <iframe
+                            src={previewFile.url}
+                            style={{ width: "100%", height: "80vh", border: "none" }}
+                            title="PDF Preview"
+                        />
+                    ) : previewFile?.typeofFile === "txt" ? (
+                        <Box
+                            sx={{
+                                width: "100%",
+                                bgcolor: "#fafafa",
+                                p: 2,
+                                borderRadius: 2,
+                                fontFamily: "monospace",
+                                fontSize: "0.95rem",
+                                whiteSpace: "pre-wrap",
+                                lineHeight: 1.6,
+                                boxShadow: "inset 0 0 6px rgba(0,0,0,0.1)",
+                            }}
+                        >
+                            {/* You’d normally fetch file content here */}
+                            Sample text file preview...
+                        </Box>
+                    ) : previewFile?.typeofFile === "doc" ||
+                        previewFile?.typeofFile === "excel" ? (
+                        <Typography variant="body2" color="text.secondary" textAlign="center">
+                            Preview not supported for <b>{previewFile.typeofFile}</b>. <br />
+                            Please download the file instead.
+                        </Typography>
+                    ) : (
+                        <Typography variant="body2" color="text.secondary" textAlign="center">
+                            No preview available.
+                        </Typography>
+                    )}
+                </DialogContent>
+
+                {/* Footer */}
+                <DialogActions sx={{ px: 3, py: 2, bgcolor: "#fafafa" }}>
+                    <Button
+                        onClick={handleClosePreview}
+                        variant="contained"
+                        sx={{ borderRadius: 2, px: 3 }}
+                    >
+                        Close
+                    </Button>
+                </DialogActions>
+            </Dialog>
+
         </div>
     );
 };
