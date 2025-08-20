@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { FolderPlus } from 'lucide-react';
 import {
   AppBar,
   Toolbar,
@@ -25,6 +26,8 @@ import {
 import { useLocation, useNavigate } from "react-router-dom";
 import { keyframes } from "@emotion/react";
 import { useAuth } from "./Auth/useAuth";
+import { setShowAddFolderModal } from "../Store/uploadSlice";
+import { useDispatch } from "react-redux";
 
 const slideIn = keyframes`
   from { opacity: 0; transform: translateY(-8px); }
@@ -33,6 +36,7 @@ const slideIn = keyframes`
 
 const Header = ({ isSidebarOpen, currentTab, onSidebarToggle }) => {
   const theme = useTheme();
+  const dispatch = useDispatch();
    const { logout, user } = useAuth();
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
   const navigate = useNavigate();
@@ -60,6 +64,10 @@ const Header = ({ isSidebarOpen, currentTab, onSidebarToggle }) => {
   const getInitials = (name) => {
     const parts = name.split(" ");
     return parts.length >= 2 ? parts[0][0] + parts[1][0] : name.slice(0, 2);
+  };
+
+  const handleAddFolder = () => {
+    dispatch(setShowAddFolderModal(true));
   };
 
   return (
@@ -117,6 +125,14 @@ const Header = ({ isSidebarOpen, currentTab, onSidebarToggle }) => {
               <SearchIcon />
             </IconButton>
           </Paper>
+        </Box>
+        <Box>
+          <button
+            onClick={handleAddFolder}
+          >
+            <span style={{ marginRight: ".5rem" }}><FolderPlus size={18} /></span>
+            New
+          </button>
         </Box>
         <Box display="flex" alignItems="center" gap={1}>
           <IconButton onClick={handleAvatarClick}>

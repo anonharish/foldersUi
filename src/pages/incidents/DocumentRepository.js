@@ -4,13 +4,16 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { Modal, Button } from 'react-bootstrap';
 import { Autocomplete, TextField, Typography } from '@mui/material';
 import FileFolderCard from '../../componnets/FileFolderCard';
+import { useDispatch, useSelector } from 'react-redux';
+import { setShowAddFolderModal } from '../../Store/uploadSlice';
 
 const DocumentRepository = () => {
     const navigate = useNavigate();
     const location = useLocation();
+    const dispatch = useDispatch();
+    const {showAddFolderModal } = useSelector(state => state.upload);
     const searchedFileName = location.state?.searchedFileName;
     const [fileNotFound, setFileNotFound] = useState(false);
-
 const initialFolders = [
   {
     id: "1",
@@ -102,7 +105,6 @@ const files = [
     const [selectedFolder, setSelectedFolder] = useState(folders[0]);
     const [searchTerm, setSearchTerm] = useState('');
     const [showAISearch, setShowAISearch] = useState(false);
-    const [showAddFolderModal, setShowAddFolderModal] = useState(false);
     const [newFolderName, setNewFolderName] = useState('');
     const [activeFolder, setActiveFolder] = useState(null);
     const [uploading, setUploading] = useState(false);
@@ -280,7 +282,7 @@ const files = [
     };
 
     const handleAddFolder = () => {
-        setShowAddFolderModal(true);
+        dispatch(setShowAddFolderModal(true));
     };
 
     const handleSaveNewFolder = () => {
@@ -293,7 +295,7 @@ const files = [
         };
         setFolders([...folders, newFolder]);
         setSelectedFolder(newFolder);
-        setShowAddFolderModal(false);
+        dispatch(setShowAddFolderModal(false));
         setNewFolderName('');
     };
 
@@ -316,7 +318,7 @@ const files = [
     ];
 
 
-console.log(activeFolder,"ACTIVEFOLDER")
+
     return (
         
         <div className="p-4 ">
@@ -471,7 +473,7 @@ console.log(activeFolder,"ACTIVEFOLDER")
 
             <Modal
                 show={showAddFolderModal}
-                onHide={() => setShowAddFolderModal(false)}
+                onHide={() => dispatch(setShowAddFolderModal(false))}
                 centered
                 dialogClassName="custom-modal"
             >
@@ -499,7 +501,7 @@ console.log(activeFolder,"ACTIVEFOLDER")
                 <Modal.Footer style={{ borderTop: 'none', padding: '0.75rem 1.5rem' }}>
                     <Button
                         variant="light"
-                        onClick={() => setShowAddFolderModal(false)}
+                        onClick={() => dispatch(setShowAddFolderModal(false))}
                         style={{
                             borderRadius: '8px',
                             border: '1px solid #ccc',
