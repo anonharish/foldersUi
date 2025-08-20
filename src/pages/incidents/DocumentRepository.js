@@ -281,9 +281,9 @@ const files = [
         );
     };
 
-    const handleAddFolder = () => {
-        dispatch(setShowAddFolderModal(true));
-    };
+    // const handleAddFolder = () => {
+    //     dispatch(setShowAddFolderModal(true));
+    // };
 
     const handleSaveNewFolder = () => {
         const newFolder = {
@@ -367,14 +367,14 @@ const files = [
                     <Typography variant="h6" sx={{ mb: 2 }}>
                     {activeFolder ?`Folders / ${activeFolder.name }`: "Folders"} 
                     </Typography>
-                    <div className="flex justify-between mb-3">
+                    {/* <div className="flex justify-between mb-3">
                         <button
                             onClick={handleAddFolder}
                         >
                             <span style={{ marginRight: ".5rem" }}><FolderPlus size={18} /></span>
                             Add Folder
                         </button>
-                    </div>
+                    </div> */}
                 </div>
                 <div>
                     {!activeFolder ? (
