@@ -28,6 +28,7 @@ import { keyframes } from "@emotion/react";
 import { useAuth } from "./Auth/useAuth";
 import { setShowAddFolderModal } from "../Store/uploadSlice";
 import { useDispatch } from "react-redux";
+import AddNewFolderFileButton from "./AddNewFolderFileButton";
 
 const slideIn = keyframes`
   from { opacity: 0; transform: translateY(-8px); }
@@ -66,9 +67,6 @@ const Header = ({ isSidebarOpen, currentTab, onSidebarToggle }) => {
     return parts.length >= 2 ? parts[0][0] + parts[1][0] : name.slice(0, 2);
   };
 
-  const handleAddFolder = () => {
-    dispatch(setShowAddFolderModal(true));
-  };
 
   return (
     <AppBar
@@ -125,28 +123,7 @@ const Header = ({ isSidebarOpen, currentTab, onSidebarToggle }) => {
               <SearchIcon />
             </IconButton>
           </Paper>
-          <Box>
-            <button
-              onClick={handleAddFolder}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                backgroundColor: 'white',
-                color: 'black',
-                border: 'none',
-                borderRadius: '20px',
-                padding: '10px 16px',
-                fontSize: '14px',
-                fontWeight: '500',
-                boxShadow: '0 1px 3px rgba(0,0,0, .5)',
-                marginLeft: '1rem',
-              }}
-            >
-              <span style={{ marginRight: '8px', display: 'flex', alignItems: 'center' }}><Plus size={25} /></span>
-              New
-            </button>
-          </Box>
+          <AddNewFolderFileButton/>
         </Box>
         
         <Box display="flex" alignItems="center" gap={1}>
