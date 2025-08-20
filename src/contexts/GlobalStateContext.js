@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect ,useRef} from 'react';
 import axios from 'axios';
 import { getNotifications } from '../api';
 
@@ -8,7 +8,7 @@ export const useGlobalState = () => useContext(GlobalStateContext);
 
 export const GlobalStateProvider = ({ children }) => {
     const [notifications, setNotifications] = useState([]);
-
+    const uploadTriggerRef = useRef(null); 
     const fetchNotifications = async () => {
         try {
           const response = await axios.post(getNotifications);
@@ -51,6 +51,17 @@ export const GlobalStateProvider = ({ children }) => {
     //     }
     // };
 
+     const setUploadTrigger = (triggerFunction) => {
+        uploadTriggerRef.current = triggerFunction;
+    };
+
+    // Function to trigger file upload
+    const triggerFileUpload = () => {
+        if (uploadTriggerRef.current) {
+            uploadTriggerRef.current();
+        }
+    };
+
     useEffect(() => {
         fetchNotifications();
     }, []);
@@ -59,7 +70,9 @@ export const GlobalStateProvider = ({ children }) => {
         <GlobalStateContext.Provider
             value={{
                 notifications,
-                fetchNotifications
+                fetchNotifications,
+                setUploadTrigger, // Add this
+                triggerFileUpload
                 // markAsRead,
                 // deleteNotification
             }}

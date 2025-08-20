@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { useDispatch } from "react-redux";
 import { Plus } from "lucide-react";
 import { Popper, Paper, Button, Fade, Box } from "@mui/material";
@@ -7,9 +7,11 @@ import {
   CloudUpload as CloudUploadIcon,
 } from "@mui/icons-material";
 import { setShowAddFolderModal } from "../Store/uploadSlice";
+import { useGlobalState } from "../contexts/GlobalStateContext";
 
 const AddNewFolderFileButton = () => {
   const dispatch = useDispatch();
+   const { triggerFileUpload } = useGlobalState();
   const [anchorEl, setAnchorEl] = useState(null);
   const isMenuOpen = Boolean(anchorEl);
 
@@ -30,8 +32,9 @@ const AddNewFolderFileButton = () => {
     // Dispatch your upload file action here
     // dispatch(uploadFileAction());
     handleMenuClose();
+    triggerFileUpload();
     // You can also trigger file input click here
-    document.getElementById("file-upload-input")?.click();
+    // document.getElementById("file-upload-input")?.click();
   };
 
   // Add click outside handler

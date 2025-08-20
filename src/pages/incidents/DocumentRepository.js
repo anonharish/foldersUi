@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect , useRef} from 'react';
 import { Search, Upload, Folder, File, ChevronRight, ChevronDown, X, MessageCircle, Trash2, FolderPlus } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Modal, Button } from 'react-bootstrap';
@@ -6,6 +6,8 @@ import { Autocomplete, Box, IconButton, Divider, TextField, Typography, Breadcru
 import FileFolderCard from '../../componnets/FileFolderCard';
 import { useDispatch, useSelector } from 'react-redux';
 import { setShowAddFolderModal } from '../../Store/uploadSlice';
+import { addFolderToStructure, updateFolderWithFiles } from '../../utils/helpers';
+import { useGlobalState } from '../../contexts/GlobalStateContext';
 import NavigateNextIcon from "@mui/icons-material/NavigateNext";
 import CloseIcon from "@mui/icons-material/Close";
 import PictureAsPdfIcon from "@mui/icons-material/PictureAsPdf";
@@ -23,6 +25,8 @@ const DocumentRepository = () => {
     const navigate = useNavigate();
     const location = useLocation();
     const dispatch = useDispatch();
+    const { setUploadTrigger } = useGlobalState();
+    const fileInputRef = useRef(null);
     const { showAddFolderModal } = useSelector((state) => state.upload);
     const searchedFileName = location.state?.searchedFileName;
     const [fileNotFound, setFileNotFound] = useState(false);
@@ -189,42 +193,53 @@ const DocumentRepository = () => {
         return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
     };
 
+    const triggerFileInput = () => {
+        if (fileInputRef.current) {
+            fileInputRef.current.click();
+        }
+    };
+    useEffect(() => {
+        setUploadTrigger(triggerFileInput);
+
+        // Cleanup function
+        return () => {
+            setUploadTrigger(null);
+        };
+    }, [setUploadTrigger]);
     const handleFileUpload = (event) => {
         const files = Array.from(event.target.files);
         if (!files.length || !activeFolder) return;
 
-        setUploading(true); // show feedback while uploading
+        setUploading(true);
 
-        // Simulate async upload delay (you can remove setTimeout if you don’t want fake delay)
+        // Simulate async upload delay
         setTimeout(() => {
             setFolders((prevFolders) => {
-                const updatedFolders = prevFolders.map((folder) =>
-                    folder.id === activeFolder.id
-                        ? {
-                            ...folder,
-                            files: [
-                                ...folder.files,
-                                ...files.map((file) => ({
-                                    id: Date.now() + Math.random(),
-                                    name: file.name,
-                                    size: file.size,
-                                    uploadedAt: new Date().toISOString(),
-                                })),
-                            ],
-                        }
-                        : folder
-                );
+                // Recursive function to find and update the active folder
 
-                const updatedActiveFolder = updatedFolders.find(
-                    (folder) => folder.id === activeFolder.id
-                );
-                dispatch(setActiveFolder(updatedActiveFolder));
+
+                const updatedFolders = updateFolderWithFiles(prevFolders, activeFolder.id, files);
+
+                // Find the updated active folder to update state
+                const findFolderById = (folders, id) => {
+                    for (const folder of folders) {
+                        if (folder.id === id) return folder;
+                        if (folder.children && folder.children.length > 0) {
+                            const found = findFolderById(folder.children, id);
+                            if (found) return found;
+                        }
+                    }
+                    return null;
+                };
+
+                const updatedActiveFolder = findFolderById(updatedFolders, activeFolder.id);
+                setActiveFolder(updatedActiveFolder);
 
                 return updatedFolders;
             });
 
-            setUploading(false); // hide feedback
-            event.target.value = ""; // reset input so same file can be re-uploaded
+            setUploading(false);
+            event.target.value = "";
         }, 1000);
     };
 
@@ -350,17 +365,28 @@ const DocumentRepository = () => {
             .filter(Boolean);
 
     const handleSaveNewFolder = () => {
+        if (!newFolderName.trim()) {
+            return;
+        }
         const newFolder = {
             id: Date.now().toString(),
-            name: newFolderName,
+            name: newFolderName.trim(),
             files: [],
-            parentId: null,
+            parentId: activeFolder ? activeFolder.id : null,
             isExpanded: true,
-        };
-        setFolders([...folders, newFolder]);
-        setSelectedFolder(newFolder);
-        dispatch(setShowAddFolderModal(false));
-        setNewFolderName("");
+            children: [],
+        }
+        try {
+            const updatedFolders = addFolderToStructure(folders, newFolder, activeFolder ? activeFolder.id : null);
+            setFolders(updatedFolders);
+
+            // Optionally select the new folder
+            setSelectedFolder(newFolder);
+            dispatch(setShowAddFolderModal(false));
+            setNewFolderName("");
+        } catch (error) {
+            console.error("Error adding folder:", error);
+        }
     };
 
     const getFilteredFiles = () => {
@@ -445,8 +471,16 @@ const DocumentRepository = () => {
                         </Link>
                     );
                 })}
-            </Breadcrumbs>
-
+            </Breadcrumbs>           
+            <input
+                style={{ display: "none" }}
+                ref={fileInputRef}
+                type="file"
+                multiple
+                hidden
+                onChange={handleFileUpload}
+                disabled={uploading} // prevent multiple clicks
+            />
             {uploading && (
                 <div
                     className="position-fixed top-0 start-0 w-100 h-100 d-flex justify-content-center align-items-center bg-dark bg-opacity-50"
