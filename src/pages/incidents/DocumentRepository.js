@@ -14,84 +14,105 @@ const DocumentRepository = () => {
     const {showAddFolderModal } = useSelector(state => state.upload);
     const searchedFileName = location.state?.searchedFileName;
     const [fileNotFound, setFileNotFound] = useState(false);
-const initialFolders = [
-  {
-    id: "1",
-    name: "Documents",
-    files: [
-      {
-        id: "file1",
-        name: "ProjectProposal.docx",
-        size: 1024,
-        type: "application/msword",
-        uploadedAt: new Date().toISOString(),
-        url: "#",
-        typeofFile: "doc",
-      },
-      {
-        id: "file2",
-        name: "BudgetPlan.xlsx",
-        size: 2048,
-        type: "application/vnd.ms-excel",
-        uploadedAt: new Date().toISOString(),
-        url: "#",
-        typeofFile: "excel",
-      },
-      {
-        id: "file3",
-        name: "MeetingNotes.txt",
-        size: 512,
-        type: "text/plain",
-        uploadedAt: new Date().toISOString(),
-        url: "#",
-        typeofFile: "txt",
-      },
-    ],
-    parentId: null,
-    isExpanded: true,
-  },
-  {
-    id: "2",
-    name: "Reports",
-    files: [
-      {
-        id: "file4",
-        name: "AnnualReport2024.pdf",
-        size: 1024,
-        type: "application/pdf",
-        uploadedAt: new Date().toISOString(),
-        url: "#",
-        typeofFile: "pdf",
-      },
-      {
-        id: "file5",
-        name: "FinancialSummary.docx",
-        size: 2048,
-        type: "application/msword",
-        uploadedAt: new Date().toISOString(),
-        url: "#",
-        typeofFile: "doc",
-      },
-      {
-        id: "file6",
-        name: "PerformanceMetrics.xlsx",
-        size: 4096,
-        type: "application/vnd.ms-excel",
-        uploadedAt: new Date().toISOString(),
-        url: "#",
-        typeofFile: "excel",
-      },
-    ],
-    parentId: null,
-    isExpanded: true,
-  },
-];
 
-const files = [
-  { id: 7, type: "file", name: "TeamRoster.xlsx", typeofFile: "excel" },
-  { id: 8, type: "file", name: "MarketingPlan.docx", typeofFile: "doc" },
-  { id: 9, type: "file", name: "SystemArchitecture.pdf", typeofFile: "pdf" },
-];
+    const initialFolders = [
+        {
+            id: "1",
+            name: "Documents",
+            files: [
+                {
+                    id: "file1",
+                    name: "ProjectProposal.docx",
+                    size: 1024,
+                    type: "application/msword",
+                    uploadedAt: new Date().toISOString(),
+                    url: "#",
+                    typeofFile: "doc",
+                },
+                {
+                    id: "file2",
+                    name: "BudgetPlan.xlsx",
+                    size: 2048,
+                    type: "application/vnd.ms-excel",
+                    uploadedAt: new Date().toISOString(),
+                    url: "#",
+                    typeofFile: "excel",
+                },
+                {
+                    id: "file3",
+                    name: "MeetingNotes.txt",
+                    size: 512,
+                    type: "text/plain",
+                    uploadedAt: new Date().toISOString(),
+                    url: "#",
+                    typeofFile: "txt",
+                },
+            ],
+            children: [
+                {
+                    id: "1-1",
+                    name: "Invoices",
+                    files: [
+                        {
+                            id: "file7",
+                            name: "Invoice-Jan.pdf",
+                            size: 800,
+                            type: "application/pdf",
+                            uploadedAt: new Date().toISOString(),
+                            url: "#",
+                            typeofFile: "pdf",
+                        },
+                    ],
+                    children: [],
+                    parentId: "1",
+                },
+
+            ],
+            parentId: null,
+            isExpanded: true,
+        },
+        {
+            id: "2",
+            name: "Reports",
+            files: [
+                {
+                    id: "file4",
+                    name: "AnnualReport2024.pdf",
+                    size: 1024,
+                    type: "application/pdf",
+                    uploadedAt: new Date().toISOString(),
+                    url: "#",
+                    typeofFile: "pdf",
+                },
+                {
+                    id: "file5",
+                    name: "FinancialSummary.docx",
+                    size: 2048,
+                    type: "application/msword",
+                    uploadedAt: new Date().toISOString(),
+                    url: "#",
+                    typeofFile: "doc",
+                },
+                {
+                    id: "file6",
+                    name: "PerformanceMetrics.xlsx",
+                    size: 4096,
+                    type: "application/vnd.ms-excel",
+                    uploadedAt: new Date().toISOString(),
+                    url: "#",
+                    typeofFile: "excel",
+                },
+            ],
+            parentId: null,
+            isExpanded: true,
+        },
+    ];
+
+    const files = [
+        { id: 7, type: "file", name: "TeamRoster.xlsx", typeofFile: "excel" },
+        { id: 8, type: "file", name: "MarketingPlan.docx", typeofFile: "doc" },
+        { id: 9, type: "file", name: "SystemArchitecture.pdf", typeofFile: "pdf" },
+    ];
 
 
 
@@ -108,7 +129,7 @@ const files = [
     const [newFolderName, setNewFolderName] = useState('');
     const [activeFolder, setActiveFolder] = useState(null);
     const [uploading, setUploading] = useState(false);
-
+    const [folderPath, setFolderPath] = useState([]);
 
     const sortOptions = [
         { label: 'Last Viewed', value: 'lastViewed' },
@@ -159,58 +180,58 @@ const files = [
     };
 
     const handleFileUpload = (event) => {
-    const files = Array.from(event.target.files);
-    if (!files.length || !activeFolder) return;
+        const files = Array.from(event.target.files);
+        if (!files.length || !activeFolder) return;
 
-    setUploading(true); // show feedback while uploading
+        setUploading(true); // show feedback while uploading
 
-    // Simulate async upload delay (you can remove setTimeout if you don’t want fake delay)
-    setTimeout(() => {
+        // Simulate async upload delay (you can remove setTimeout if you don’t want fake delay)
+        setTimeout(() => {
+            setFolders((prevFolders) => {
+                const updatedFolders = prevFolders.map((folder) =>
+                    folder.id === activeFolder.id
+                        ? {
+                            ...folder,
+                            files: [
+                                ...folder.files,
+                                ...files.map((file) => ({
+                                    id: Date.now() + Math.random(),
+                                    name: file.name,
+                                    size: file.size,
+                                    uploadedAt: new Date().toISOString(),
+                                })),
+                            ],
+                        }
+                        : folder
+                );
+
+                const updatedActiveFolder = updatedFolders.find(
+                    (folder) => folder.id === activeFolder.id
+                );
+                setActiveFolder(updatedActiveFolder);
+
+                return updatedFolders;
+            });
+
+            setUploading(false); // hide feedback
+            event.target.value = ""; // reset input so same file can be re-uploaded
+        }, 1000);
+    };
+
+    const handleFileDelete = (fileId) => {
         setFolders((prevFolders) => {
             const updatedFolders = prevFolders.map((folder) =>
                 folder.id === activeFolder.id
-                    ? {
-                          ...folder,
-                          files: [
-                              ...folder.files,
-                              ...files.map((file) => ({
-                                  id: Date.now() + Math.random(),
-                                  name: file.name,
-                                  size: file.size,
-                                  uploadedAt: new Date().toISOString(),
-                              })),
-                          ],
-                      }
+                    ? { ...folder, files: folder.files.filter((f) => f.id !== fileId) }
                     : folder
             );
 
-            const updatedActiveFolder = updatedFolders.find(
-                (folder) => folder.id === activeFolder.id
-            );
+            const updatedActiveFolder = updatedFolders.find(folder => folder.id === activeFolder.id);
             setActiveFolder(updatedActiveFolder);
 
             return updatedFolders;
         });
-
-        setUploading(false); // hide feedback
-        event.target.value = ""; // reset input so same file can be re-uploaded
-    }, 1000);
-};
-
-    const handleFileDelete = (fileId) => {
-    setFolders((prevFolders) => {
-        const updatedFolders = prevFolders.map((folder) =>
-            folder.id === activeFolder.id
-                ? { ...folder, files: folder.files.filter((f) => f.id !== fileId) }
-                : folder
-        );
-
-        const updatedActiveFolder = updatedFolders.find(folder => folder.id === activeFolder.id);
-        setActiveFolder(updatedActiveFolder);
-
-        return updatedFolders;
-    });
-};
+    };
 
 
     const toggleFolderExpansion = (folderId) => {
@@ -318,9 +339,19 @@ const files = [
     ];
 
 
+    console.log(activeFolder, "ACTIVEFOLDER")
+
+    const openFolder = (folder) => {
+        setFolderPath((prev) => [...prev, folder]);
+    };
+
+    const goBack = () => {
+        setFolderPath((prev) => prev.slice(0, -1));
+    };
+
 
     return (
-        
+
         <div className="p-4 ">
             {uploading && (
                 <div className="position-fixed top-0 start-0 w-100 h-100 d-flex justify-content-center align-items-center bg-dark bg-opacity-50" style={{ zIndex: 2000 }}>
@@ -361,7 +392,7 @@ const files = [
                 </div>
             </div>
 
-            <div style={{ padding: "16px" }}>                
+            <div style={{ padding: "16px" }}>
                 {/* Folders Section */}
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
                     <Typography variant="h6" sx={{ mb: 2 }}>
@@ -379,14 +410,14 @@ const files = [
                 <div>
                     {!activeFolder ? (
                         <>
-                          
+
                             <div style={{ display: "flex", flexWrap: "wrap", gap: "16px" }}>
                                 {folders.map((folder) => (
                                     <FileFolderCard
                                         key={folder.id}
                                         type="folder"
                                         name={folder.name}
-                                        onClick={() => setActiveFolder(folder)} 
+                                        onClick={() => setActiveFolder(folder)}
                                     />
                                 ))}
                             </div>
@@ -403,34 +434,46 @@ const files = [
                                     cursor: "pointer",
                                 }}
                                 onClick={() => setActiveFolder(null)}
+                                // onClick={goBack}
                             >
                                 ← Back to Folders
                             </button>
 
-                             <label className="btn btn-primary ms-2">
-                                    <Upload style={{ width: '1rem', height: '1rem' }} className="me-1" />
-                                    {uploading ? "Uploading..." : "Upload File"}
-                                    <input
-                                        type="file"
-                                        multiple
-                                        hidden
-                                        onChange={handleFileUpload}
-                                        disabled={uploading} // prevent multiple clicks
-                                    />
+                            <label className="btn btn-primary ms-2">
+                                <Upload style={{ width: '1rem', height: '1rem' }} className="me-1" />
+                                {uploading ? "Uploading..." : "Upload File"}
+                                <input
+                                    type="file"
+                                    multiple
+                                    hidden
+                                    onChange={handleFileUpload}
+                                    disabled={uploading} // prevent multiple clicks
+                                />
                             </label>
 
                             <div style={{ display: "flex", flexWrap: "wrap", gap: "16px" }}>
+                                {/* 👉 Show subfolders */}
+                                {activeFolder.children && activeFolder.children.length > 0 && (
+                                    activeFolder.children.map((child) => (
+                                        <FileFolderCard
+                                            key={child.id}
+                                            type="folder"
+                                            name={child.name}
+                                            onClick={() => setActiveFolder(child)} // navigate inside subfolder
+                                        />
+                                    ))
+                                )}
                                 {activeFolder.files.length > 0 ? (
-                                        activeFolder.files.map((file) => (
-                                            <div key={file.id} style={{ position: "relative" }}>
-                                                <FileFolderCard
-                                                    type="file"
-                                                    name={file.name}
-                                                    size={`${Math.round(file.size / 1024)} KB`}
-                                                    date={new Date(file.uploadedAt).toLocaleDateString()}
-                                                    typeofFile={file.typeofFile}
-                                                />
-                                                {/* <button
+                                    activeFolder.files.map((file) => (
+                                        <div key={file.id} style={{ position: "relative" }}>
+                                            <FileFolderCard
+                                                type="file"
+                                                name={file.name}
+                                                size={`${Math.round(file.size / 1024)} KB`}
+                                                date={new Date(file.uploadedAt).toLocaleDateString()}
+                                                typeofFile={file.typeofFile}
+                                            />
+                                            {/* <button
                                                     onClick={() => handleFileDelete(file.id)}
                                                     style={{
                                                         position: "absolute",
@@ -443,13 +486,13 @@ const files = [
                                                 >
                                                     <Trash2 style={{ width: "1rem", height: "1rem", color: "red" }} />
                                                 </button> */}
-                                            </div>
-                                        ))
-                                ) : (
+                                        </div>
+                                    ))
+                                ) :( activeFolder.children.length === 0 ? (
                                     <Typography variant="body2" color="text.secondary">
-                                        No files inside this folder.
+                                        No files or folders inside this folder.
                                     </Typography>
-                                )}
+                                ) : null)}
                             </div>
                         </>
                     )}
