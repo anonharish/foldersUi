@@ -4,6 +4,7 @@ import { Outlet, useLocation } from "react-router-dom";
 import Header from "./Header";
 import Sidebar from "./Sidebar";
 import DocumentRepository from "../pages/incidents/DocumentRepository";
+import ChatWidget from "./chatBot/chatWidget";
 
 
 const AppLayout = () => {
@@ -53,6 +54,7 @@ const AppLayout = () => {
         }}
       >
        <Outlet/>
+        <ChatWidget/>
       </Box>
     </Box>
   );
