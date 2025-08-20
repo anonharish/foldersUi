@@ -2,18 +2,20 @@ import React, { useState, useEffect } from 'react';
 import { Search, Upload, Folder, File, ChevronRight, ChevronDown, X, MessageCircle, Trash2, FolderPlus } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Modal, Button } from 'react-bootstrap';
-import { Autocomplete, TextField, Typography } from '@mui/material';
+import { Autocomplete, TextField, Typography, Breadcrumbs, Link } from '@mui/material';
 import FileFolderCard from '../../componnets/FileFolderCard';
 import { useDispatch, useSelector } from 'react-redux';
 import { setShowAddFolderModal } from '../../Store/uploadSlice';
+import NavigateNextIcon from "@mui/icons-material/NavigateNext";
 
 const DocumentRepository = () => {
     const navigate = useNavigate();
     const location = useLocation();
     const dispatch = useDispatch();
-    const {showAddFolderModal } = useSelector(state => state.upload);
+    const { showAddFolderModal } = useSelector(state => state.upload);
     const searchedFileName = location.state?.searchedFileName;
     const [fileNotFound, setFileNotFound] = useState(false);
+
 
     const initialFolders = [
         {
@@ -130,6 +132,7 @@ const DocumentRepository = () => {
     const [activeFolder, setActiveFolder] = useState(null);
     const [uploading, setUploading] = useState(false);
     const [folderPath, setFolderPath] = useState([]);
+
 
     const sortOptions = [
         { label: 'Last Viewed', value: 'lastViewed' },
@@ -342,7 +345,20 @@ const DocumentRepository = () => {
     console.log(activeFolder, "ACTIVEFOLDER")
 
     const openFolder = (folder) => {
+        setActiveFolder(folder);
         setFolderPath((prev) => [...prev, folder]);
+    };
+
+    const handleBreadcrumbClick = (index) => {
+        const newPath = folderPath.slice(0, index + 1);
+        setFolderPath(newPath);
+        setActiveFolder(newPath[newPath.length - 1]);
+    };
+
+
+    const goHome = () => {
+        setActiveFolder(null);
+        setFolderPath([]);
     };
 
     const goBack = () => {
@@ -350,9 +366,43 @@ const DocumentRepository = () => {
     };
 
 
+
     return (
 
         <div className="p-4 ">
+            <Breadcrumbs aria-label="breadcrumb" sx={{ mb: 2 }} separator="›" >
+
+                <Link
+                    underline="hover"
+                    color="inherit"
+                    onClick={goHome}
+                    sx={{ cursor: "pointer" }}
+                >
+                    Home
+                </Link>
+
+                {/* Dynamic Folders Path */}
+                {folderPath.map((folder, index) => {
+                    const isLast = index === folderPath.length - 1;
+                    return isLast ? (
+                        <Typography style={{color:"blue"}} key={folder.id}>
+                            {folder.name}
+                        </Typography>
+                    ) : (
+                        <Link
+                            underline="hover"
+                            color="inherit"
+                            key={folder.id}
+                            onClick={() => handleBreadcrumbClick(index)}
+                            sx={{ cursor: "pointer" }}
+                        >
+                            {folder.name}
+                        </Link>
+                    );
+                })}
+            </Breadcrumbs>
+
+
             {uploading && (
                 <div className="position-fixed top-0 start-0 w-100 h-100 d-flex justify-content-center align-items-center bg-dark bg-opacity-50" style={{ zIndex: 2000 }}>
                     <div className="spinner-border text-light" role="status" style={{ width: "3rem", height: "3rem" }}>
@@ -393,21 +443,10 @@ const DocumentRepository = () => {
             </div>
 
             <div style={{ padding: "16px" }}>
-                {/* Folders Section */}
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
-                    <Typography variant="h6" sx={{ mb: 2 }}>
-                    {activeFolder ?`Folders / ${activeFolder.name }`: "Folders"} 
-                    </Typography>
-                    {/* <div className="flex justify-between mb-3">
-                        <button
-                            onClick={handleAddFolder}
-                        >
-                            <span style={{ marginRight: ".5rem" }}><FolderPlus size={18} /></span>
-                            Add Folder
-                        </button>
-                    </div> */}
-                </div>
                 <div>
+                    <Typography variant="h6" sx={{ mt: 4, mb: 2 }}>
+                        Folders
+                    </Typography>
                     {!activeFolder ? (
                         <>
 
@@ -417,7 +456,7 @@ const DocumentRepository = () => {
                                         key={folder.id}
                                         type="folder"
                                         name={folder.name}
-                                        onClick={() => setActiveFolder(folder)}
+                                        onClick={() => openFolder(folder)}
                                     />
                                 ))}
                             </div>
@@ -425,7 +464,7 @@ const DocumentRepository = () => {
                     ) : (
                         <>
                             {/* Back button */}
-                            <button
+                            {/* <button
                                 style={{
                                     marginBottom: "16px",
                                     padding: "6px 12px",
@@ -434,10 +473,10 @@ const DocumentRepository = () => {
                                     cursor: "pointer",
                                 }}
                                 onClick={() => setActiveFolder(null)}
-                                // onClick={goBack}
+                            // onClick={goBack}
                             >
                                 ← Back to Folders
-                            </button>
+                            </button> */}
 
                             <label className="btn btn-primary ms-2">
                                 <Upload style={{ width: '1rem', height: '1rem' }} className="me-1" />
@@ -452,14 +491,14 @@ const DocumentRepository = () => {
                             </label>
 
                             <div style={{ display: "flex", flexWrap: "wrap", gap: "16px" }}>
-                                {/* 👉 Show subfolders */}
+                                {/*  Show subfolders */}
                                 {activeFolder.children && activeFolder.children.length > 0 && (
                                     activeFolder.children.map((child) => (
                                         <FileFolderCard
                                             key={child.id}
                                             type="folder"
                                             name={child.name}
-                                            onClick={() => setActiveFolder(child)} // navigate inside subfolder
+                                            onClick={() => openFolder(child)}
                                         />
                                     ))
                                 )}
@@ -473,22 +512,9 @@ const DocumentRepository = () => {
                                                 date={new Date(file.uploadedAt).toLocaleDateString()}
                                                 typeofFile={file.typeofFile}
                                             />
-                                            {/* <button
-                                                    onClick={() => handleFileDelete(file.id)}
-                                                    style={{
-                                                        position: "absolute",
-                                                        top: "4px",
-                                                        right: "4px",
-                                                        border: "none",
-                                                        background: "transparent",
-                                                        cursor: "pointer"
-                                                    }}
-                                                >
-                                                    <Trash2 style={{ width: "1rem", height: "1rem", color: "red" }} />
-                                                </button> */}
                                         </div>
                                     ))
-                                ) :( activeFolder.children.length === 0 ? (
+                                ) : (activeFolder.children.length === 0 ? (
                                     <Typography variant="body2" color="text.secondary">
                                         No files or folders inside this folder.
                                     </Typography>

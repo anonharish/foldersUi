@@ -15,6 +15,7 @@ import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import FileDownloadOutlinedIcon from "@mui/icons-material/FileDownloadOutlined";
 import ShareOutlinedIcon from "@mui/icons-material/ShareOutlined";
 import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
+import VisibilityIcon from '@mui/icons-material/Visibility';
 
 import FolderIcon from "@mui/icons-material/Folder";
 import PictureAsPdfIcon from "@mui/icons-material/PictureAsPdf";
@@ -103,15 +104,13 @@ const FileFolderCard = ({ type, name, onClick, date, size, typeofFile }) => {
         {/* File actions: show only on hover */}
         {!isFolder && hovered && (
           <div style={{ display: "flex", justifyContent: "space-around", marginTop: "12px" }}>
-            <Button size="small" startIcon={<FileDownloadOutlinedIcon />} sx={{ fontSize: "10px" }}>
-              Download
-            </Button>
-            <Button size="small" startIcon={<DriveFileRenameOutlineIcon />} sx={{ fontSize: "10px" }}>
-              Rename
-            </Button>
-            <Button size="small" startIcon={<DeleteOutlineIcon />} sx={{ color: "red", fontSize: "10px" }}>
-              Delete
-            </Button>
+             <Button size="small" startIcon={<VisibilityIcon />} sx={{ color: "blue", fontSize: "10px" }}/>
+            <Button size="small" startIcon={<FileDownloadOutlinedIcon />} sx={{ fontSize: "10px" }}/>
+           
+            <Button size="small" startIcon={<DriveFileRenameOutlineIcon />} sx={{ fontSize: "10px" }}/>
+           
+            <Button size="small" startIcon={<DeleteOutlineIcon />} sx={{ color: "red", fontSize: "10px" }}/>
+          
           </div>
         )}
 
