@@ -52,7 +52,7 @@ const AppLayout = () => {
           mb: 2,
         }}
       >
-        <DocumentRepository/>
+       <Outlet/>
       </Box>
     </Box>
   );

@@ -11,41 +11,86 @@ const DocumentRepository = () => {
     const searchedFileName = location.state?.searchedFileName;
     const [fileNotFound, setFileNotFound] = useState(false);
 
+const initialFolders = [
+  {
+    id: "1",
+    name: "Documents",
+    files: [
+      {
+        id: "file1",
+        name: "ProjectProposal.docx",
+        size: 1024,
+        type: "application/msword",
+        uploadedAt: new Date().toISOString(),
+        url: "#",
+        typeofFile: "doc",
+      },
+      {
+        id: "file2",
+        name: "BudgetPlan.xlsx",
+        size: 2048,
+        type: "application/vnd.ms-excel",
+        uploadedAt: new Date().toISOString(),
+        url: "#",
+        typeofFile: "excel",
+      },
+      {
+        id: "file3",
+        name: "MeetingNotes.txt",
+        size: 512,
+        type: "text/plain",
+        uploadedAt: new Date().toISOString(),
+        url: "#",
+        typeofFile: "txt",
+      },
+    ],
+    parentId: null,
+    isExpanded: true,
+  },
+  {
+    id: "2",
+    name: "Reports",
+    files: [
+      {
+        id: "file4",
+        name: "AnnualReport2024.pdf",
+        size: 1024,
+        type: "application/pdf",
+        uploadedAt: new Date().toISOString(),
+        url: "#",
+        typeofFile: "pdf",
+      },
+      {
+        id: "file5",
+        name: "FinancialSummary.docx",
+        size: 2048,
+        type: "application/msword",
+        uploadedAt: new Date().toISOString(),
+        url: "#",
+        typeofFile: "doc",
+      },
+      {
+        id: "file6",
+        name: "PerformanceMetrics.xlsx",
+        size: 4096,
+        type: "application/vnd.ms-excel",
+        uploadedAt: new Date().toISOString(),
+        url: "#",
+        typeofFile: "excel",
+      },
+    ],
+    parentId: null,
+    isExpanded: true,
+  },
+];
 
-    // Initial folders structure
-    const initialFolders = [
-        {
-            id: '1',
-            name: 'Documents',
-            files: [],
-            parentId: null,
-            isExpanded: true,
-        },
-        {
-            id: '2',
-            name: 'Reports',
-            files: [
-                {
-                    id: 'file1',
-                    name: 'Report1.pdf',
-                    size: 1024,
-                    type: 'application/pdf',
-                    uploadedAt: new Date().toISOString(),
-                    url: '#',
-                },
-                {
-                    id: "file2",
-                    name: "Summary.docx",
-                    size: 2048,
-                    type: "application/msword",
-                    uploadedAt: new Date().toISOString(),
-                    url: "#",
-                },
-            ],
-            parentId: null,
-            isExpanded: true,
-        },
-    ];
+const files = [
+  { id: 7, type: "file", name: "TeamRoster.xlsx", typeofFile: "excel" },
+  { id: 8, type: "file", name: "MarketingPlan.docx", typeofFile: "doc" },
+  { id: 9, type: "file", name: "SystemArchitecture.pdf", typeofFile: "pdf" },
+];
+
+
 
     // Retrieve folders from localStorage if available
     const getInitialFolders = () => {
@@ -270,12 +315,8 @@ const DocumentRepository = () => {
         { id: 4, type: "folder", name: "project2" },
     ];
 
-    const files = [
-        { id: 5, type: "file", name: "Untitled spreadsheet" },
-        { id: 6, type: "file", name: "Untitled document" },
-        { id: 7, type: "file", name: "Untitled diagram" },
-    ];
 
+console.log(activeFolder,"ACTIVEFOLDER")
     return (
         
         <div className="p-4 ">
@@ -292,26 +333,6 @@ const DocumentRepository = () => {
                 </div>
             )}
 
-            <div className="mb-4 d-flex gap-2">
-                <div className="position-relative flex-grow-1">
-                    <Search className="position-absolute start-0 top-50 translate-middle-y text-muted"
-                        style={{ width: '1.25rem', height: '1.25rem', marginLeft: '1rem' }} />
-                    <input
-                        type="text"
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        placeholder="Search files..."
-                        className="form-control ps-5"
-                    />
-                </div>
-                <button
-                    onClick={() => navigate('/document/aiSearch')}
-                    className="btn d-flex align-items-center gap-2 accordian_submit_btn"
-                >
-                    <MessageCircle style={{ width: '1.25rem', height: '1.25rem' }} />
-                    AI Search
-                </button>
-            </div>
             <div className="row align-items-center" style={{
                 border: '1px solid #c4c4c4',
                 borderRadius: '8px',
@@ -405,8 +426,9 @@ const DocumentRepository = () => {
                                                     name={file.name}
                                                     size={`${Math.round(file.size / 1024)} KB`}
                                                     date={new Date(file.uploadedAt).toLocaleDateString()}
+                                                    typeofFile={file.typeofFile}
                                                 />
-                                                <button
+                                                {/* <button
                                                     onClick={() => handleFileDelete(file.id)}
                                                     style={{
                                                         position: "absolute",
@@ -418,7 +440,7 @@ const DocumentRepository = () => {
                                                     }}
                                                 >
                                                     <Trash2 style={{ width: "1rem", height: "1rem", color: "red" }} />
-                                                </button>
+                                                </button> */}
                                             </div>
                                         ))
                                 ) : (
@@ -441,6 +463,7 @@ const DocumentRepository = () => {
                             type="file"
                             name={file.name}
                             onClick={() => console.log("Open file:", file.name)}
+                            typeofFile={file.typeofFile}
                         />
                     ))}
                 </div>

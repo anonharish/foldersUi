@@ -30,7 +30,7 @@ export const privateRoutes = [
     children: [
       { index: true, element: <Navigate to="/home" replace /> },
 
-      { path: "home", element: <IncidentDashboard/> },
+      { path: "incident/dashboard", element: <IncidentDashboard/> },
       { path: "incident", element: <Incident /> },
       { path: "incident/create", element: <CreateIncident /> },
       { path: "incident/details/:id", element: <IncidentDetails /> },
@@ -38,7 +38,7 @@ export const privateRoutes = [
       { path: "admin/pannel", element: <User /> },
       { path: "admin/pannel/adduser", element: <AddUser /> },
 
-      { path: "document/repository", element: <DocumentRepository /> },
+      { path: "home", element: <DocumentRepository /> },
       { path: "document/aiSearch", element: <AISearchDashboard /> },
     ],
   },
