@@ -1,8 +1,8 @@
-import React, { useState, useEffect , useRef} from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Search, Upload, Folder, File, ChevronRight, ChevronDown, X, MessageCircle, Trash2, FolderPlus } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Modal, Button } from 'react-bootstrap';
-import { Autocomplete, Box, IconButton, Divider, TextField, Typography, Breadcrumbs, Link, Dialog, DialogTitle, DialogContent, DialogActions } from '@mui/material';
+import { Autocomplete, TextField, Typography, Breadcrumbs, Link, Dialog, DialogTitle, Divider, DialogContent,DialogActions, Box, IconButton } from '@mui/material';
 import FileFolderCard from '../../componnets/FileFolderCard';
 import { useDispatch, useSelector } from 'react-redux';
 import { setShowAddFolderModal } from '../../Store/uploadSlice';
@@ -15,6 +15,8 @@ import DescriptionIcon from "@mui/icons-material/Description";
 import ArticleIcon from "@mui/icons-material/Article";
 
 import { resetFolderPath, setFolderPath, addFolderToPath, setActiveFolder } from '../../Store/breadcrumbSlice';
+import JSZip from 'jszip';
+import { saveAs } from "file-saver";
 
 const DocumentRepository = () => {
     const files = [
@@ -336,21 +338,27 @@ const DocumentRepository = () => {
             </div>
         );
     };
+    // Helper: recursively find folder by id
+const findFolderById = (folders, id) => {
+  for (let folder of folders) {
+    if (folder.id === id) return folder;
+    const found = findFolderById(folder.children || [], id);
+    if (found) return found;
+  }
+  return null;
+};
 
-    const handleRename = (folders, id, newName) =>
-        folders.map((folder) => {
-            if (folder.id === id) {
-                return { ...folder, name: newName };
-            }
 
-            return {
-                ...folder,
-                files: folder.files.map((file) =>
-                    file.id === id ? { ...file, name: newName } : file
-                ),
-                children: handleRename(folder.children || [], id, newName),
-            };
-        });
+const handleRename = (folders, fileId, newName) => {
+  return folders.map(folder => ({
+    ...folder,
+    files: folder.files.map(file =>
+      file.id === fileId ? { ...file, name: newName } : file
+    ),
+    children: handleRename(folder.children || [], fileId, newName)
+  }));
+};
+
 
     const handleDelete = (folders, id) =>
         folders
@@ -440,8 +448,7 @@ const DocumentRepository = () => {
         // Implement file download logic here
         console.log("Downloading file:", file.name);
     }
-
-    useEffect(() => {
+ useEffect(() => {
         // Sync activeFolder with current folders state
         if (activeFolder) {
             const findUpdatedFolder = (foldersArray, folderId) => {
@@ -461,6 +468,48 @@ const DocumentRepository = () => {
             }
         }
     }, [folders, activeFolder, dispatch]);
+
+const handleRenameFolder = (folders, folderId, newName) => {
+  return folders.map(folder => {
+    if (folder.id === folderId) {
+      return { ...folder, name: newName };
+    }
+    if (folder.children) {
+      return { ...folder, children: handleRenameFolder(folder.children, folderId, newName) };
+    }
+    return folder;
+  });
+};
+
+// Delete Folder
+const handleDeleteFolder = (folders, folderId) => {
+  return folders.filter(folder => folder.id !== folderId)
+    .map(folder => ({
+      ...folder,
+      children: folder.children ? handleDeleteFolder(folder.children, folderId) : [],
+    }));
+};
+
+const handleDownloadFolder = async (folder) => {
+  const zip = new JSZip();
+
+  const addFilesToZip = (currentFolder, zipFolder) => {
+    currentFolder.files?.forEach(file => {
+      zipFolder.file(file.name, `Dummy content of ${file.name}`); // replace with file.blob if available
+    });
+
+    currentFolder.children?.forEach(childFolder => {
+      const childZip = zipFolder.folder(childFolder.name);
+      addFilesToZip(childFolder, childZip);
+    });
+  };
+
+  addFilesToZip(folder, zip);
+
+  const blob = await zip.generateAsync({ type: "blob" });
+  saveAs(blob, `${folder.name}.zip`);
+};
+
     return (
         <div className="p-4 ">
             <Breadcrumbs aria-label="breadcrumb" sx={{ mb: 2 }} separator="›">
@@ -563,36 +612,25 @@ const DocumentRepository = () => {
                         <>
                             <div style={{ display: "flex", flexWrap: "wrap", gap: "16px" }}>
                                 {folders.map((folder) => (
-                                    <FileFolderCard
-                                        key={folder.id}
-                                        type="folder"
-                                        name={folder.name}
+
+<FileFolderCard
+  key={folder.id}
+  type="folder"
+  name={folder.name}
                                         onClick={() => openFolder(folder)}
                                         // Rename
-                                        onRename={(newName) => {
-                                            const updated = handleRename(folders, folder.id, newName);
-                                            setFolders(updated);
-
-                                            if (activeFolder) {
-                                                const refreshed = updated.find(
-                                                    (f) => f.id === activeFolder.id
-                                                );
-                                                dispatch(setActiveFolder(refreshed));
-                                            }
-                                        }}
-                                        // Delete
-                                        onDelete={() => {
-                                            const updated = handleDelete(folders, folder.id);
-                                            setFolders(updated);
-
-                                            if (activeFolder) {
-                                                const refreshed = updated.find(
-                                                    (f) => f.id === activeFolder.id
-                                                );
-                                                dispatch(setActiveFolder(refreshed || null));
-                                            }
-                                        }}
-                                    />
+  onRename={(newName) => {
+    const updated = handleRenameFolder(folders, folder.id, newName);
+    setFolders(updated);
+  }}
+  onDelete={() => {
+    const updated = handleDeleteFolder(folders, folder.id);
+    setFolders(updated);
+  }}
+  onDownload={() => {
+    handleDownloadFolder(folder);
+  }}
+/>
                                 ))}
                             </div>
                         </>
@@ -611,18 +649,19 @@ const DocumentRepository = () => {
                                             dispatch(setActiveFolder(folder));
                                             dispatch(addFolderToPath(folder));
                                         }}
-                                        onRename={(newName) => {
-                                            const updated = handleRename(folders, folder.id, newName);
-                                            setFolders(updated);
-                                            const refreshed = updated.find((f) => f.id === activeFolder.id);
-                                            dispatch(setActiveFolder(refreshed || null));
-                                        }}
-                                        onDelete={() => {
-                                            const updated = handleDelete(folders, folder.id);
-                                            setFolders(updated);
-                                            const refreshed = updated.find((f) => f.id === activeFolder.id);
-                                            dispatch(setActiveFolder(refreshed || null));
-                                        }}
+                                        // Rename
+  onRename={(newName) => {
+    const updated = handleRenameFolder(folders, folder.id, newName);
+    setFolders(updated);
+  }}
+  onDelete={() => {
+    const updated = handleDeleteFolder(folders, folder.id);
+    setFolders(updated);
+  }}
+  onDownload={() => {
+    handleDownloadFolder(folder);
+  }}
+
                                     />
                                 ))}
 
@@ -634,74 +673,28 @@ const DocumentRepository = () => {
                                         size={`${Math.round(file.size / 1024)} KB`}
                                         date={new Date(file.uploadedAt).toLocaleDateString()}
                                         typeofFile={file.typeofFile}
-                                        onRename={(newName) => {
-                                            const updated = handleRename(folders, file.id, newName);
-                                            setFolders(updated);
-                                            if (activeFolder) {
-                                                const refreshed = updated.find(
-                                                    (f) => f.id === activeFolder.id
-                                                );
-                                                dispatch(setActiveFolder(refreshed));
-                                            }
-                                        }}
-                                        onDelete={() => {
-                                            const updated = handleDelete(folders, file.id);
-                                            setFolders(updated);
-                                            if (activeFolder) {
-                                                const refreshed = updated.find(
-                                                    (f) => f.id === activeFolder.id
-                                                );
-                                                dispatch(setActiveFolder(refreshed || null));
-                                            }
-                                        }}
-                                        handleViewClick={() => handleViewClick(file)}
+                             onRename={(newName) => {
+  const updated = handleRename(folders, file.id, newName);
+  setFolders(updated);
+  if (activeFolder) {
+    const refreshed = findFolderById(updated, activeFolder.id);
+    dispatch(setActiveFolder(refreshed || null));
+  }
+}}
+   handleViewClick={() => handleViewClick(file)}
                                         handleDownloadClick={() => handleDownloadClick(file)}
+
+onDelete={() => {
+  const updated = handleDelete(folders, file.id);
+  setFolders(updated);
+
+  if (activeFolder) {
+    const refreshed = findFolderById(updated, activeFolder.id);
+    dispatch(setActiveFolder(refreshed || null));
+  }
+}}
                                     />
                                 ))}
-                                {activeFolder.files.length > 0 ? (
-                                    activeFolder.files.map((file) => (
-                                        <div key={file.id} style={{ position: "relative" }}>
-                                            <FileFolderCard
-                                                key={file.id}
-                                                type="file"
-                                                name={file.name}
-                                                size={`${Math.round(file.size / 1024)} KB`}
-                                                date={new Date(file.uploadedAt).toLocaleDateString()}
-                                                typeofFile={file.typeofFile}
-                                                onRename={(newName) => {
-                                                    const updated = handleRename(
-                                                        folders,
-                                                        file.id,
-                                                        newName
-                                                    );
-                                                    setFolders(updated);
-                                                    if (activeFolder) {
-                                                        const refreshed = updated.find(
-                                                            (f) => f.id === activeFolder.id
-                                                        );
-                                                        dispatch(setActiveFolder(refreshed));
-                                                    }
-                                                }}
-                                                onDelete={() => {
-                                                    const updated = handleDelete(folders, file.id);
-                                                    setFolders(updated);
-                                                    if (activeFolder) {
-                                                        const refreshed = updated.find(
-                                                            (f) => f.id === activeFolder.id
-                                                        );
-                                                        dispatch(setActiveFolder(refreshed || null));
-                                                    }
-                                                }}
-                                                handleViewClick={() => handleViewClick(file)}
-                                                handleDownloadClick={() => handleDownloadClick(file)}
-                                            />
-                                        </div>
-                                    ))
-                                ) : activeFolder.children.length === 0 ? (
-                                    <Typography variant="body2" color="text.secondary">
-                                        No files or folders inside this folder.
-                                    </Typography>
-                                ) : null}
                             </div>
                         </>
                     )}

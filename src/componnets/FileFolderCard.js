@@ -28,7 +28,7 @@ import DescriptionIcon from "@mui/icons-material/Description";
 import TableChartIcon from "@mui/icons-material/TableChart";
 import InsertDriveFileIcon from "@mui/icons-material/InsertDriveFile";
 
-const FileFolderCard = ({ type, name, onClick, date, size, typeofFile, onRename, onDelete, handleViewClick, handleDownloadClick }) => {
+const FileFolderCard = ({ type, name, onClick, date, size, typeofFile, onRename, onDelete, handleViewClick, handleDownloadClick ,onDownload}) => {
   const [anchorEl, setAnchorEl] = useState(null);
   const [hovered, setHovered] = useState(false);
   const [renameDialogOpen, setRenameDialogOpen] = useState(false);
@@ -43,7 +43,7 @@ const FileFolderCard = ({ type, name, onClick, date, size, typeofFile, onRename,
 
   const isFolder = type === "folder";
 
-  // File/Folder Rename
+ 
   const handleRenameClick = () => {
     setRenameDialogOpen(true);
     setAnchorEl(null);
@@ -146,39 +146,63 @@ const handleDeleteConfirm = () => {
           )}
 
           {/* Folder menu */}
-          <Menu
-            anchorEl={anchorEl}
-            open={open}
-            onClose={handleMenuClose}
-            PaperProps={{
-              sx: {
-                borderRadius: "10px",
-                minWidth: 180,
-                boxShadow: "0px 6px 18px rgba(0,0,0,0.12)"
-              }
-            }}
-          >
-            <MenuItem onClick={handleMenuClose}>
-              <ListItemIcon><FileDownloadOutlinedIcon fontSize="small" /></ListItemIcon>
-              <ListItemText primary="Download" />
-            </MenuItem>
-            <MenuItem onClick={handleRenameClick}>
-              <ListItemIcon><DriveFileRenameOutlineIcon fontSize="small" /></ListItemIcon>
-              <ListItemText primary="Rename" />
-            </MenuItem>
-            <MenuItem onClick={handleMenuClose}>
-              <ListItemIcon><ShareOutlinedIcon fontSize="small" /></ListItemIcon>
-              <ListItemText primary="Share" />
-            </MenuItem>
-            <MenuItem onClick={handleMenuClose}>
-              <ListItemIcon><InfoOutlinedIcon fontSize="small" /></ListItemIcon>
-              <ListItemText primary="Folder info" />
-            </MenuItem>
-            <MenuItem onClick={handleDeleteClick} sx={{ color: "red" }}>
-              <ListItemIcon><DeleteOutlineIcon fontSize="small" sx={{ color: "red" }} /></ListItemIcon>
-              <ListItemText primary="Move to trash" />
-            </MenuItem>
-          </Menu>
+{/* Folder menu */}
+<Menu
+  anchorEl={anchorEl}
+  open={open}
+  onClose={handleMenuClose}
+  PaperProps={{
+    sx: {
+      borderRadius: "10px",
+      minWidth: 180,
+      boxShadow: "0px 6px 18px rgba(0,0,0,0.12)"
+    }
+  }}
+>
+  {/* Download */}
+  <MenuItem
+    onClick={(e) => {
+         e.stopPropagation();
+      handleMenuClose();
+      if (onDownload) onDownload();
+    }}
+  >
+    <ListItemIcon>
+      <FileDownloadOutlinedIcon fontSize="small" />
+    </ListItemIcon>
+    <ListItemText primary="Download" />
+  </MenuItem>
+
+  {/* Rename */}
+  <MenuItem
+    onClick={(e) => {
+           e.stopPropagation();
+      handleRenameClick();
+      handleMenuClose();
+    }}
+  >
+    <ListItemIcon>
+      <DriveFileRenameOutlineIcon fontSize="small" />
+    </ListItemIcon>
+    <ListItemText primary="Rename" />
+  </MenuItem>
+
+  {/* Delete */}
+  <MenuItem
+    onClick={(e) => {
+          e.stopPropagation();
+      handleDeleteClick();
+      handleMenuClose();
+    }}
+    sx={{ color: "red" }}
+  >
+    <ListItemIcon>
+      <DeleteOutlineIcon fontSize="small" sx={{ color: "red" }} />
+    </ListItemIcon>
+    <ListItemText primary="Move to trash" />
+  </MenuItem>
+</Menu>
+
         </CardContent>
       </Card>
 
