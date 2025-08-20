@@ -440,6 +440,27 @@ const DocumentRepository = () => {
         // Implement file download logic here
         console.log("Downloading file:", file.name);
     }
+
+    useEffect(() => {
+        // Sync activeFolder with current folders state
+        if (activeFolder) {
+            const findUpdatedFolder = (foldersArray, folderId) => {
+                for (const folder of foldersArray) {
+                    if (folder.id === folderId) return folder;
+                    if (folder.children && folder.children.length > 0) {
+                        const found = findUpdatedFolder(folder.children, folderId);
+                        if (found) return found;
+                    }
+                }
+                return null;
+            };
+
+            const updatedFolder = findUpdatedFolder(folders, activeFolder.id);
+            if (updatedFolder && updatedFolder !== activeFolder) {
+                dispatch(setActiveFolder(updatedFolder));
+            }
+        }
+    }, [folders, activeFolder, dispatch]);
     return (
         <div className="p-4 ">
             <Breadcrumbs aria-label="breadcrumb" sx={{ mb: 2 }} separator="›">
