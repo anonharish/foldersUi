@@ -8,7 +8,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { setShowAddFolderModal } from '../../Store/uploadSlice';
 import NavigateNextIcon from "@mui/icons-material/NavigateNext";
 
-import { resetFolderPath, setFolderPath, addFolderToPath } from '../../Store/breadcrumbSlice';
+import { resetFolderPath, setFolderPath, addFolderToPath, setActiveFolder } from '../../Store/breadcrumbSlice';
 
 const DocumentRepository = () => {
     const navigate = useNavigate();
@@ -19,6 +19,7 @@ const DocumentRepository = () => {
     const [fileNotFound, setFileNotFound] = useState(false);
 
     const folderPath = useSelector((root) => root.breadcrumb.folderPath);
+    const activeFolder = useSelector((root) => root.breadcrumb.activeFolder)
 
     const initialFolders = [
         {
@@ -132,7 +133,7 @@ const DocumentRepository = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [showAISearch, setShowAISearch] = useState(false);
     const [newFolderName, setNewFolderName] = useState('');
-    const [activeFolder, setActiveFolder] = useState(null);
+    // const [activeFolder, setActiveFolder] = useState(null);
     const [uploading, setUploading] = useState(false);
     // const [folderPath, setFolderPath] = useState([]);
 
@@ -214,7 +215,7 @@ const DocumentRepository = () => {
                 const updatedActiveFolder = updatedFolders.find(
                     (folder) => folder.id === activeFolder.id
                 );
-                setActiveFolder(updatedActiveFolder);
+               dispatch( setActiveFolder(updatedActiveFolder));
 
                 return updatedFolders;
             });
@@ -233,7 +234,7 @@ const DocumentRepository = () => {
             );
 
             const updatedActiveFolder = updatedFolders.find(folder => folder.id === activeFolder.id);
-            setActiveFolder(updatedActiveFolder);
+            dispatch(setActiveFolder(updatedActiveFolder))
 
             return updatedFolders;
         });
@@ -345,19 +346,18 @@ const DocumentRepository = () => {
   
 
     const openFolder = (folder) => {
-        setActiveFolder(folder);
+        dispatch(setActiveFolder(folder));
         dispatch(addFolderToPath(folder));
     };
 
     const handleBreadcrumbClick = (index) => {
         const newPath = folderPath.slice(0, index + 1);
         dispatch(setFolderPath(newPath));
-        setActiveFolder(newPath[newPath.length - 1]);
+       dispatch( setActiveFolder(newPath[newPath.length - 1]))
     };
 
 
     const goHome = () => {
-        setActiveFolder(null);
         dispatch(resetFolderPath());
     };
 
