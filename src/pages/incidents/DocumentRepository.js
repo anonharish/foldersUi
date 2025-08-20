@@ -8,6 +8,8 @@ import { useDispatch, useSelector } from 'react-redux';
 import { setShowAddFolderModal } from '../../Store/uploadSlice';
 import NavigateNextIcon from "@mui/icons-material/NavigateNext";
 
+import { resetFolderPath, setFolderPath, addFolderToPath } from '../../Store/breadcrumbSlice';
+
 const DocumentRepository = () => {
     const navigate = useNavigate();
     const location = useLocation();
@@ -16,6 +18,7 @@ const DocumentRepository = () => {
     const searchedFileName = location.state?.searchedFileName;
     const [fileNotFound, setFileNotFound] = useState(false);
 
+    const folderPath = useSelector((root) => root.breadcrumb.folderPath);
 
     const initialFolders = [
         {
@@ -131,7 +134,7 @@ const DocumentRepository = () => {
     const [newFolderName, setNewFolderName] = useState('');
     const [activeFolder, setActiveFolder] = useState(null);
     const [uploading, setUploading] = useState(false);
-    const [folderPath, setFolderPath] = useState([]);
+    // const [folderPath, setFolderPath] = useState([]);
 
 
     const sortOptions = [
@@ -346,24 +349,22 @@ const DocumentRepository = () => {
 
     const openFolder = (folder) => {
         setActiveFolder(folder);
-        setFolderPath((prev) => [...prev, folder]);
+        dispatch(addFolderToPath(folder));
     };
 
     const handleBreadcrumbClick = (index) => {
         const newPath = folderPath.slice(0, index + 1);
-        setFolderPath(newPath);
+        dispatch(setFolderPath(newPath));
         setActiveFolder(newPath[newPath.length - 1]);
     };
 
 
     const goHome = () => {
         setActiveFolder(null);
-        setFolderPath([]);
+        dispatch(resetFolderPath());
     };
 
-    const goBack = () => {
-        setFolderPath((prev) => prev.slice(0, -1));
-    };
+    console.log(folderPath, "FOLDERPATH")
 
 
 
@@ -382,10 +383,10 @@ const DocumentRepository = () => {
                 </Link>
 
                 {/* Dynamic Folders Path */}
-                {folderPath.map((folder, index) => {
+                {Array.isArray(folderPath) && folderPath.map((folder, index) => {
                     const isLast = index === folderPath.length - 1;
                     return isLast ? (
-                        <Typography style={{color:"blue"}} key={folder.id}>
+                        <Typography style={{ color: "blue" }} key={folder.id}>
                             {folder.name}
                         </Typography>
                     ) : (
