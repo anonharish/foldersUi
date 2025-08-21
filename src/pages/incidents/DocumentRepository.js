@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Modal, Button } from 'react-bootstrap';
-import { Autocomplete, TextField, Typography, Breadcrumbs, Link, Dialog, DialogTitle, Divider, DialogContent,DialogActions, Box, IconButton } from '@mui/material';
+import { Modal, } from 'react-bootstrap';
+import {  Button, Autocomplete, TextField, Typography, Breadcrumbs, Link, Dialog, DialogTitle, Divider, DialogContent,DialogActions, Box, IconButton } from '@mui/material';
 import FileFolderCard from '../../componnets/FileFolderCard';
 import { useDispatch, useSelector } from 'react-redux';
 import { setShowAddFolderModal } from '../../Store/uploadSlice';
@@ -184,6 +184,7 @@ const DocumentRepository = () => {
 
     const handleViewClick = (file) => {
         setPreviewFile(file);
+        console.log(file, "preview file")
     }
 
     const handleClosePreview = () => {

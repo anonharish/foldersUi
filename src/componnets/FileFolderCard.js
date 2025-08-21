@@ -21,6 +21,7 @@ import FileDownloadOutlinedIcon from "@mui/icons-material/FileDownloadOutlined";
 import ShareOutlinedIcon from "@mui/icons-material/ShareOutlined";
 import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 import VisibilityIcon from "@mui/icons-material/Visibility";
+import { Star } from "@mui/icons-material";
 
 import FolderIcon from "@mui/icons-material/Folder";
 import PictureAsPdfIcon from "@mui/icons-material/PictureAsPdf";
@@ -28,7 +29,7 @@ import DescriptionIcon from "@mui/icons-material/Description";
 import TableChartIcon from "@mui/icons-material/TableChart";
 import InsertDriveFileIcon from "@mui/icons-material/InsertDriveFile";
 
-const FileFolderCard = ({ type, name, onClick, date, size, typeofFile, onRename, onDelete, handleViewClick, handleDownloadClick ,onDownload}) => {
+const FileFolderCard = ({ type, name, onClick, date, size, typeofFile, onRename, onDelete, handleViewClick, handleDownloadClick, onDownload, handleStarredClick }) => {
   const [anchorEl, setAnchorEl] = useState(null);
   const [hovered, setHovered] = useState(false);
   const [renameDialogOpen, setRenameDialogOpen] = useState(false);
@@ -43,7 +44,7 @@ const FileFolderCard = ({ type, name, onClick, date, size, typeofFile, onRename,
 
   const isFolder = type === "folder";
 
- 
+
   const handleRenameClick = () => {
     setRenameDialogOpen(true);
     setAnchorEl(null);
@@ -55,14 +56,14 @@ const FileFolderCard = ({ type, name, onClick, date, size, typeofFile, onRename,
   };
 
   const handleDeleteClick = () => {
-  setDeleteDialogOpen(true);
-  setAnchorEl(null);
-};
+    setDeleteDialogOpen(true);
+    setAnchorEl(null);
+  };
 
-const handleDeleteConfirm = () => {
-  if (onDelete) onDelete();
-  setDeleteDialogOpen(false);
-};
+  const handleDeleteConfirm = () => {
+    if (onDelete) onDelete();
+    setDeleteDialogOpen(false);
+  };
 
 
   // Determine icon based on file type
@@ -122,86 +123,113 @@ const handleDeleteConfirm = () => {
             </div>
 
             {/* Menu only for folders */}
-            {isFolder && (
-              <IconButton
-                size="small"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleMenuOpen(e);
-                }}
-              >
-                <MoreVertIcon fontSize="small" />
-              </IconButton>
-            )}
+            {/* {isFolder && ( */}
+            <IconButton
+              size="small"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleMenuOpen(e);
+              }}
+            >
+              <MoreVertIcon fontSize="small" />
+            </IconButton>
+            {/* )} */}
           </div>
 
           {/* File actions: show only on hover */}
           {!isFolder && hovered && (
             <div style={{ display: "flex", justifyContent: "space-around", marginTop: "12px" }}>
-              <Button size="small" startIcon={<VisibilityIcon />} sx={{ color: "blue", fontSize: "10px" }} onClick={handleViewClick}/>
-              <Button size="small" startIcon={<FileDownloadOutlinedIcon />} sx={{ fontSize: "10px" }} onClick={handleDownloadClick}/>
-              <Button size="small" startIcon={<DriveFileRenameOutlineIcon />} sx={{ fontSize: "10px" }} onClick={handleRenameClick} />
+              <Button size="small" startIcon={<Star />} sx={{ color: "yellow", fontSize: "10px" }} onClick={handleStarredClick} />
+              {/* <Button size="small" startIcon={<VisibilityIcon />} sx={{ color: "blue", fontSize: "10px" }} onClick={handleViewClick} /> */}
+              <Button size="small" startIcon={<FileDownloadOutlinedIcon />} sx={{ fontSize: "10px" }} onClick={handleDownloadClick} />
+              {/* <Button size="small" startIcon={<DriveFileRenameOutlineIcon />} sx={{ fontSize: "10px" }} onClick={handleRenameClick} /> */}
               <Button size="small" startIcon={<DeleteOutlineIcon />} sx={{ color: "red", fontSize: "10px" }} onClick={handleDeleteClick} />
             </div>
           )}
 
           {/* Folder menu */}
-{/* Folder menu */}
-<Menu
-  anchorEl={anchorEl}
-  open={open}
-  onClose={handleMenuClose}
-  PaperProps={{
-    sx: {
-      borderRadius: "10px",
-      minWidth: 180,
-      boxShadow: "0px 6px 18px rgba(0,0,0,0.12)"
-    }
-  }}
->
-  {/* Download */}
-  <MenuItem
-    onClick={(e) => {
-         e.stopPropagation();
-      handleMenuClose();
-      if (onDownload) onDownload();
-    }}
-  >
-    <ListItemIcon>
-      <FileDownloadOutlinedIcon fontSize="small" />
-    </ListItemIcon>
-    <ListItemText primary="Download" />
-  </MenuItem>
+          {/* Folder menu */}
+          <Menu
+            anchorEl={anchorEl}
+            open={open}
+            onClose={handleMenuClose}
+            PaperProps={{
+              sx: {
+                borderRadius: "10px",
+                minWidth: 180,
+                boxShadow: "0px 6px 18px rgba(0,0,0,0.12)"
+              }
+            }}
+          >
+            {/* View */}
+              <MenuItem
+              onClick={(e) => {
+                e.stopPropagation();
+                handleMenuClose();
+                if (handleViewClick) handleViewClick();
+              }}
+            >
+              <ListItemIcon>
+                <VisibilityIcon fontSize="small" sx={{color:"blue"}}/>
+              </ListItemIcon>
+              <ListItemText primary="View" />
+            </MenuItem>
+            {/* Download */}
+            <MenuItem
+              onClick={(e) => {
+                e.stopPropagation();
+                handleMenuClose();
+                if (onDownload) onDownload();
+              }}
+            >
+              <ListItemIcon>
+                <FileDownloadOutlinedIcon fontSize="small" />
+              </ListItemIcon>
+              <ListItemText primary="Download" />
+            </MenuItem>
 
-  {/* Rename */}
-  <MenuItem
-    onClick={(e) => {
-           e.stopPropagation();
-      handleRenameClick();
-      handleMenuClose();
-    }}
-  >
-    <ListItemIcon>
-      <DriveFileRenameOutlineIcon fontSize="small" />
-    </ListItemIcon>
-    <ListItemText primary="Rename" />
-  </MenuItem>
+            {/* Rename */}
+            <MenuItem
+              onClick={(e) => {
+                e.stopPropagation();
+                handleRenameClick();
+                handleMenuClose();
+              }}
+            >
+              <ListItemIcon>
+                <DriveFileRenameOutlineIcon fontSize="small" />
+              </ListItemIcon>
+              <ListItemText primary="Rename" />
+            </MenuItem>
+            {/* star */}
+            <MenuItem
+              onClick={(e) => {
+                e.stopPropagation();
+                handleStarredClick();
+                handleMenuClose();
+              }}
+            >
+              <ListItemIcon>
+                <Star fontSize="small" sx={{color:"yellow"}}/>
+              </ListItemIcon>
+              <ListItemText primary="Starred" />
+            </MenuItem>
 
-  {/* Delete */}
-  <MenuItem
-    onClick={(e) => {
-          e.stopPropagation();
-      handleDeleteClick();
-      handleMenuClose();
-    }}
-    sx={{ color: "red" }}
-  >
-    <ListItemIcon>
-      <DeleteOutlineIcon fontSize="small" sx={{ color: "red" }} />
-    </ListItemIcon>
-    <ListItemText primary="Move to trash" />
-  </MenuItem>
-</Menu>
+            {/* Delete */}
+            <MenuItem
+              onClick={(e) => {
+                e.stopPropagation();
+                handleDeleteClick();
+                handleMenuClose();
+              }}
+              sx={{ color: "red" }}
+            >
+              <ListItemIcon>
+                <DeleteOutlineIcon fontSize="small" sx={{ color: "red" }} />
+              </ListItemIcon>
+              <ListItemText primary="Move to trash" />
+            </MenuItem>
+          </Menu>
 
         </CardContent>
       </Card>
@@ -227,18 +255,18 @@ const handleDeleteConfirm = () => {
         </DialogActions>
       </Dialog>
       {/* Delete Confirmation Dialog */}
-<Dialog open={deleteDialogOpen} onClose={() => setDeleteDialogOpen(false)}>
-  <DialogTitle>Confirm Delete</DialogTitle>
-  <DialogContent>
-    Are you sure you want to delete "{name}"?
-  </DialogContent>
-  <DialogActions>
-    <Button onClick={() => setDeleteDialogOpen(false)}>Cancel</Button>
-    <Button onClick={handleDeleteConfirm} variant="contained" color="error">
-      Delete
-    </Button>
-  </DialogActions>
-</Dialog>
+      <Dialog open={deleteDialogOpen} onClose={() => setDeleteDialogOpen(false)}>
+        <DialogTitle>Confirm Delete</DialogTitle>
+        <DialogContent>
+          Are you sure you want to delete "{name}"?
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setDeleteDialogOpen(false)}>Cancel</Button>
+          <Button onClick={handleDeleteConfirm} variant="contained" color="error">
+            Delete
+          </Button>
+        </DialogActions>
+      </Dialog>
 
     </>
   );
