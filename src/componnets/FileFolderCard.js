@@ -22,7 +22,7 @@ import FileDownloadOutlinedIcon from "@mui/icons-material/FileDownloadOutlined";
 import ShareOutlinedIcon from "@mui/icons-material/ShareOutlined";
 import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 import VisibilityIcon from "@mui/icons-material/Visibility";
-import { Star, StarBorder } from "@mui/icons-material";
+import { PictureInPictureAltSharp, Star, StarBorder } from "@mui/icons-material";
 
 import FolderIcon from "@mui/icons-material/Folder";
 import PictureAsPdfIcon from "@mui/icons-material/PictureAsPdf";
@@ -30,21 +30,21 @@ import DescriptionIcon from "@mui/icons-material/Description";
 import TableChartIcon from "@mui/icons-material/TableChart";
 import InsertDriveFileIcon from "@mui/icons-material/InsertDriveFile";
 
-const FileFolderCard = ({
+const FileFolderCard = ({ 
   type,
-  name,
-  onClick,
-  date,
-  size,
-  typeofFile,
-  onRename,
-  onDelete,
-  handleViewClick,
-  handleDownloadClick,
-  onDownload,
-  onDoubleClick,
-  isSelected
-}) => {
+   name,
+    onClick, 
+    date,
+     size,
+      typeofFile,
+       onRename, 
+       onDelete, 
+       handleViewClick,
+        handleDownloadClick,
+         onDownload, 
+         handleStarredClick ,
+          onDoubleClick,
+  isSelected}) => {
   const [anchorEl, setAnchorEl] = useState(null);
   const [hovered, setHovered] = useState(false);
   const [renameDialogOpen, setRenameDialogOpen] = useState(false);
@@ -85,11 +85,14 @@ const FileFolderCard = ({
     setDeleteDialogOpen(false);
   };
 
+
   // Determine icon based on file type
   const renderFileIcon = () => {
     if (isFolder) return <FolderIcon sx={{ fontSize: 28, color: "#06379e" }} />;
 
     switch (typeofFile?.toLowerCase()) {
+         case "img":
+        return <PictureInPictureAltSharp sx={{ fontSize: 36, color: "#fc3d39" }} />;
       case "pdf":
         return <PictureAsPdfIcon sx={{ fontSize: 36, color: "#fc3d39" }} />;
       case "excel":
@@ -108,20 +111,20 @@ const FileFolderCard = ({
 
   return (
     <>
-<Card
-  onClick={onClick}
+      <Card
+        onClick={onClick}
   onDoubleClick={isFolder ? onDoubleClick : undefined}
-  onMouseEnter={() => setHovered(true)}
-  onMouseLeave={() => setHovered(false)}
-  sx={{
-    width: isFolder ? 180 : 250,
-    cursor: "pointer",
-    borderRadius: "12px",
+        onMouseEnter={() => setHovered(true)}
+        onMouseLeave={() => setHovered(false)}
+        sx={{
+          width: isFolder ? 180 : 250,
+          cursor: "pointer",
+          borderRadius: "12px",
     backgroundColor: isSelected ? "#e3f2fd" : "white",
     border: isSelected ? "2px solid #1976d2" : "1px solid #ddd",
     transition: "all 0.2s",
-  }}
->
+        }}
+      >
 
         <CardContent sx={{ p: 2 }}>
           <div
@@ -141,19 +144,19 @@ const FileFolderCard = ({
             >
               {renderFileIcon()}
 <Tooltip title={name}>
-  <span
-    style={{
-      fontSize: "14px",
-      fontWeight: 500,
-      whiteSpace: "nowrap",
-      overflow: "hidden",
-      textOverflow: "ellipsis",
+              <span
+                style={{
+                  fontSize: "14px",
+                  fontWeight: 500,
+                  whiteSpace: "nowrap",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
       flex: 1,
       cursor: "default",
-    }}
-  >
+                }}
+              >
     {name.length > MAX_LENGTH ? name.slice(0, MAX_LENGTH) + "..." : name}
-  </span>
+              </span>
 </Tooltip>
             </div>
 
@@ -218,7 +221,7 @@ const FileFolderCard = ({
             }}
           >
             {/* View */}
-            <MenuItem
+              <MenuItem
               onClick={(e) => {
                 e.stopPropagation();
                 handleMenuClose();
