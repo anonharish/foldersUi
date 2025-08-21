@@ -1,18 +1,17 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, Upload, Folder, File, ChevronRight, ChevronDown, X, MessageCircle, Trash2, FolderPlus } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Modal, Button } from 'react-bootstrap';
 import { Autocomplete, TextField, Typography, Breadcrumbs, Link, Dialog, DialogTitle, Divider, DialogContent,DialogActions, Box, IconButton } from '@mui/material';
 import FileFolderCard from '../../componnets/FileFolderCard';
 import { useDispatch, useSelector } from 'react-redux';
 import { setShowAddFolderModal } from '../../Store/uploadSlice';
-import { addFolderToStructure, updateFolderWithFiles, getFileType } from '../../utils/helpers';
+import { addFolderToStructure, updateFolderWithFiles, getFileType,findFolderById } from '../../utils/helpers';
 import { useGlobalState } from '../../contexts/GlobalStateContext';
-import NavigateNextIcon from "@mui/icons-material/NavigateNext";
 import CloseIcon from "@mui/icons-material/Close";
 import PictureAsPdfIcon from "@mui/icons-material/PictureAsPdf";
 import DescriptionIcon from "@mui/icons-material/Description";
 import ArticleIcon from "@mui/icons-material/Article";
+import { initialFolders } from './data';
 
 import { resetFolderPath, setFolderPath, addFolderToPath, setActiveFolder } from '../../Store/breadcrumbSlice';
 import JSZip from 'jszip';
@@ -36,98 +35,6 @@ const DocumentRepository = () => {
     const folderPath = useSelector((root) => root.breadcrumb.folderPath);
     const activeFolder = useSelector((root) => root.breadcrumb.activeFolder)
 
-    const initialFolders = [
-        {
-            id: "1",
-            name: "Documents",
-            files: [
-                {
-                    id: "file1",
-                    name: "ProjectProposal.docx",
-                    size: 1024,
-                    type: "application/msword",
-                    uploadedAt: new Date().toISOString(),
-                    url: "#",
-                    typeofFile: "doc",
-                },
-                {
-                    id: "file2",
-                    name: "BudgetPlan.xlsx",
-                    size: 2048,
-                    type: "application/vnd.ms-excel",
-                    uploadedAt: new Date().toISOString(),
-                    url: "#",
-                    typeofFile: "excel",
-                },
-                {
-                    id: "file3",
-                    name: "MeetingNotes.txt",
-                    size: 512,
-                    type: "text/plain",
-                    uploadedAt: new Date().toISOString(),
-                    url: "#",
-                    typeofFile: "txt",
-                },
-            ],
-            children: [
-                {
-                    id: "1-1",
-                    name: "Invoices",
-                    files: [
-                        {
-                            id: "file7",
-                            name: "Invoice-Jan.pdf",
-                            size: 800,
-                            type: "application/pdf",
-                            uploadedAt: new Date().toISOString(),
-                            url: "#",
-                            typeofFile: "pdf",
-                        },
-                    ],
-                    children: [],
-                    parentId: "1",
-                },
-            ],
-            parentId: null,
-            isExpanded: true,
-        },
-        {
-            id: "2",
-            name: "Reports",
-            files: [
-                {
-                    id: "file4",
-                    name: "AnnualReport2024.pdf",
-                    size: 1024,
-                    type: "application/pdf",
-                    uploadedAt: new Date().toISOString(),
-                    url: "#",
-                    typeofFile: "pdf",
-                },
-                {
-                    id: "file5",
-                    name: "FinancialSummary.docx",
-                    size: 2048,
-                    type: "application/msword",
-                    uploadedAt: new Date().toISOString(),
-                    url: "#",
-                    typeofFile: "doc",
-                },
-                {
-                    id: "file6",
-                    name: "PerformanceMetrics.xlsx",
-                    size: 4096,
-                    type: "application/vnd.ms-excel",
-                    uploadedAt: new Date().toISOString(),
-                    url: "#",
-                    typeofFile: "excel",
-                },
-            ],
-            parentId: null,
-            isExpanded: true,
-        },
-    ];
-
     // Retrieve folders from localStorage if available
     //   const getInitialFolders = () => {
     //     const storedFolders = localStorage.getItem("folders");
@@ -140,7 +47,6 @@ const DocumentRepository = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [showAISearch, setShowAISearch] = useState(false);
     const [newFolderName, setNewFolderName] = useState('');
-    // const [activeFolder, setActiveFolder] = useState(null);
     const [uploading, setUploading] = useState(false);
     const [previewFile, setPreviewFile] = useState(null);
 
@@ -150,225 +56,66 @@ const DocumentRepository = () => {
         { label: "Edited", value: "edited" },
     ];
     const [sortBy, setSortBy] = useState(sortOptions[0]);
-    useEffect(() => {
-        if (searchedFileName) {
-            let fileFound = false;
-            let folderWithFile = null;
-
-            folders.forEach((folder) => {
-                const foundFile = folder.files.find(
-                    (file) => file.name === searchedFileName
-                );
-                if (foundFile) {
-                    fileFound = true;
-                    folderWithFile = folder;
-                }
-            });
-
-            if (fileFound) {
-                setSelectedFolder(folderWithFile);
-                setFileNotFound(false);
-            } else {
-                setFileNotFound(true);
-                alert(`File "${searchedFileName}" was not found in the repository.`);
-            }
-        }
-    }, [searchedFileName, folders]);
-
-    // Save folders to localStorage whenever they change
-    useEffect(() => {
-        localStorage.setItem("folders", JSON.stringify(folders));
-    }, [folders]);
-
-    const ALLOWED_TYPES = [
-        "application/pdf",
-        "application/msword",
-        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-        "text/plain",
-    ];
-
-    const formatFileSize = (bytes) => {
-        if (bytes === 0) return "0 Bytes";
-        const k = 1024;
-        const sizes = ["Bytes", "KB", "MB", "GB"];
-        const i = Math.floor(Math.log(bytes) / Math.log(k));
-        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
-    };
 
     const triggerFileInput = () => {
         if (fileInputRef.current) {
             fileInputRef.current.click();
         }
     };
-    useEffect(() => {
-        setUploadTrigger(triggerFileInput);
-
-        // Cleanup function
-        return () => {
-            setUploadTrigger(null);
-        };
-    }, [setUploadTrigger]);
+    
     const handleFileUpload = (event) => {
-    const files = Array.from(event.target.files);
-    if (!files.length) return;
-
-    setUploading(true);
-
-    setTimeout(() => {
+      const files = Array.from(event.target.files);
+      if (!files.length) return;
+      setUploading(true);
+      setTimeout(() => {
         setFolders((prevFolders) => {
-            let updatedFolders;
+          let updatedFolders;
 
-            if (!activeFolder) {
-                updatedFolders = [
-                    ...prevFolders,
-                    ...files.map((file) => ({
-                        id: Date.now() + Math.random(),
-                        name: file.name,
-                        type: "file",
-                        size: file.size,
-                        uploadedAt: new Date().toISOString(),
-                        url: "#",
-                        typeofFile: getFileType(file.name),
-                    })),
-                ];
-            } else {
-                updatedFolders = updateFolderWithFiles(prevFolders, activeFolder.id, files);
-                const findFolderById = (folders, id) => {
-                    for (const folder of folders) {
-                        if (folder.id === id) return folder;
-                        if (folder.children && folder.children.length > 0) {
-                            const found = findFolderById(folder.children, id);
-                            if (found) return found;
-                        }
-                    }
-                    return null;
-                };
+          if (!activeFolder) {
+            updatedFolders = [
+              ...prevFolders,
+              ...files.map((file) => ({
+                id: Date.now() + Math.random(),
+                name: file.name,
+                type: "file",
+                size: file.size,
+                uploadedAt: new Date().toISOString(),
+                url: "#",
+                typeofFile: getFileType(file.name),
+              })),
+            ];
+          } else {
+            updatedFolders = updateFolderWithFiles(
+              prevFolders,
+              activeFolder.id,
+              files
+            );
+            
+            const updatedActiveFolder = findFolderById(
+              updatedFolders,
+              activeFolder.id
+            );
+            setActiveFolder(updatedActiveFolder);
+          }
 
-                const updatedActiveFolder = findFolderById(updatedFolders, activeFolder.id);
-                setActiveFolder(updatedActiveFolder);
-            }
-
-            return updatedFolders;
+          return updatedFolders;
         });
 
         setUploading(false);
         event.target.value = "";
-    }, 1000);
-};
-
-    const handleFileDelete = (fileId) => {
-        setFolders((prevFolders) => {
-            const updatedFolders = prevFolders.map((folder) =>
-                folder.id === activeFolder.id
-                    ? { ...folder, files: folder.files.filter((f) => f.id !== fileId) }
-                    : folder
-            );
-
-            const updatedActiveFolder = updatedFolders.find(
-                (folder) => folder.id === activeFolder.id
-            );
-            dispatch(setActiveFolder(updatedActiveFolder));
-
-            return updatedFolders;
-        });
+      }, 1000);
     };
 
-    const toggleFolderExpansion = (folderId) => {
-        setFolders((prevFolders) =>
-            prevFolders.map((folder) =>
-                folder.id === folderId
-                    ? { ...folder, isExpanded: !folder.isExpanded }
-                    : folder
-            )
-        );
+
+    const handleRename = (folders, fileId, newName) => {
+        return folders?.map(folder => ({
+            ...folder,
+            files: folder?.files.map(file =>
+                file.id === fileId ? { ...file, name: newName } : file
+            ),
+            children: handleRename(folder?.children || [], fileId, newName)
+        }));
     };
-
-    const handleFolderDelete = (folderId) => {
-        setFolders((prevFolders) =>
-            prevFolders.filter((folder) => folder.id !== folderId)
-        );
-        if (selectedFolder && selectedFolder.id === folderId) {
-            setSelectedFolder(null);
-        }
-    };
-
-    const RenderFolder = ({ folder, depth = 0 }) => {
-        const childFolders = folders.filter((f) => f.parentId === folder.id);
-        const hasChildren = childFolders.length > 0;
-
-        return (
-            <div className="user-select-none">
-                <div
-                    className={`d-flex align-items-center gap-2 p-2 rounded ${selectedFolder?.id === folder.id ? "bg-light" : "hover-bg-secondary"
-                        }`}
-                    style={{ paddingLeft: `${depth * 16 + 8}px`, cursor: "pointer" }}
-                    onClick={() => setSelectedFolder(folder)}
-                >
-                    {hasChildren && (
-                        <button
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                toggleFolderExpansion(folder.id);
-                            }}
-                            className="btn btn-sm d-flex align-items-center justify-content-center p-0 bg-light border-0 rounded"
-                            style={{ width: "1rem", height: "1rem" }}
-                        >
-                            {folder.isExpanded ? (
-                                <ChevronDown className="bi bi-chevron-down" />
-                            ) : (
-                                <ChevronRight className="bi bi-chevron-right" />
-                            )}
-                        </button>
-                    )}
-                    <Folder
-                        className="bi bi-folder text-primary"
-                        style={{ width: "1rem", height: "1rem" }}
-                    />
-                    <span className="text-truncate">{folder.name}</span>
-                    <span className="ms-auto text-muted small">
-                        {folder.files.length} files
-                    </span>
-                    <button
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            handleFolderDelete(folder.id);
-                        }}
-                        className="btn btn-outline-danger btn-sm"
-                    >
-                        <Trash2 style={{ width: "1rem", height: "1rem" }} />
-                    </button>
-                </div>
-                {folder.isExpanded &&
-                    childFolders.map((childFolder) => (
-                        <RenderFolder
-                            key={childFolder.id}
-                            folder={childFolder}
-                            depth={depth + 1}
-                        />
-                    ))}
-            </div>
-        );
-    };
-    // Helper: recursively find folder by id
-const findFolderById = (folders, id) => {
-  for (let folder of folders) {
-    if (folder.id === id) return folder;
-    const found = findFolderById(folder.children || [], id);
-    if (found) return found;
-  }
-  return null;
-};
-
-
-const handleRename = (folders, fileId, newName) => {
-  return folders.map(folder => ({
-    ...folder,
-    files: folder.files.map(file =>
-      file.id === fileId ? { ...file, name: newName } : file
-    ),
-    children: handleRename(folder.children || [], fileId, newName)
-  }));
-};
 
 
     const handleDelete = (folders, id) =>
@@ -398,8 +145,6 @@ const handleRename = (folders, fileId, newName) => {
         try {
             const updatedFolders = addFolderToStructure(folders, newFolder, activeFolder ? activeFolder.id : null);
             setFolders(updatedFolders);
-
-            // Optionally select the new folder
             setSelectedFolder(newFolder);
             dispatch(setShowAddFolderModal(false));
             setNewFolderName("");
@@ -419,16 +164,6 @@ const handleRename = (folders, fileId, newName) => {
                 file.name.toLowerCase().includes(searchTerm.toLowerCase())
             );
     };
-
-    const folderss = [
-        { id: 1, type: "folder", name: "Vrinda" },
-        { id: 2, type: "folder", name: "src" },
-        { id: 3, type: "folder", name: "siri" },
-        { id: 4, type: "folder", name: "project2" },
-    ];
-
-
-
 
     const openFolder = (folder) => {
         dispatch(setActiveFolder(folder));
@@ -456,10 +191,87 @@ const handleRename = (folders, fileId, newName) => {
     }
 
     const handleDownloadClick = (file) => {
-        // Implement file download logic here
         console.log("Downloading file:", file.name);
     }
- useEffect(() => {
+
+
+    const handleRenameFolder = (folders, folderId, newName) => {
+    return folders.map(folder => {
+        if (folder.id === folderId) {
+        return { ...folder, name: newName };
+        }
+        if (folder.children) {
+        return { ...folder, children: handleRenameFolder(folder.children, folderId, newName) };
+        }
+        return folder;
+    });
+    };
+
+// Delete Folder
+    const handleDeleteFolder = (folders, folderId) => {
+    return folders.filter(folder => folder.id !== folderId)
+        .map(folder => ({
+        ...folder,
+        children: folder.children ? handleDeleteFolder(folder.children, folderId) : [],
+        }));
+    };
+
+    const handleDownloadFolder = async (folder) => {
+    const zip = new JSZip();
+
+    const addFilesToZip = (currentFolder, zipFolder) => {
+        currentFolder.files?.forEach(file => {
+        zipFolder.file(file.name, `Dummy content of ${file.name}`); // replace with file.blob if available
+        });
+
+        currentFolder.children?.forEach(childFolder => {
+        const childZip = zipFolder.folder(childFolder.name);
+        addFilesToZip(childFolder, childZip);
+        });
+    };
+
+    addFilesToZip(folder, zip);
+
+    const blob = await zip.generateAsync({ type: "blob" });
+    saveAs(blob, `${folder.name}.zip`);
+    };
+    useEffect(() => {
+        localStorage.setItem("folders", JSON.stringify(folders));
+    }, [folders]);
+
+    useEffect(() => {
+        if (searchedFileName) {
+            let fileFound = false;
+            let folderWithFile = null;
+
+            folders.forEach((folder) => {
+                const foundFile = folder.files.find(
+                    (file) => file.name === searchedFileName
+                );
+                if (foundFile) {
+                    fileFound = true;
+                    folderWithFile = folder;
+                }
+            });
+
+            if (fileFound) {
+                setSelectedFolder(folderWithFile);
+                setFileNotFound(false);
+            } else {
+                setFileNotFound(true);
+                alert(`File "${searchedFileName}" was not found in the repository.`);
+            }
+        }
+    }, [searchedFileName, folders]);
+
+    useEffect(() => {
+        setUploadTrigger(triggerFileInput);
+        return () => {
+            setUploadTrigger(null);
+        };
+    }, [setUploadTrigger]);
+
+    useEffect(() => {
         // Sync activeFolder with current folders state
         if (activeFolder) {
             const findUpdatedFolder = (foldersArray, folderId) => {
@@ -479,47 +291,6 @@ const handleRename = (folders, fileId, newName) => {
             }
         }
     }, [folders, activeFolder, dispatch]);
-
-const handleRenameFolder = (folders, folderId, newName) => {
-  return folders.map(folder => {
-    if (folder.id === folderId) {
-      return { ...folder, name: newName };
-    }
-    if (folder.children) {
-      return { ...folder, children: handleRenameFolder(folder.children, folderId, newName) };
-    }
-    return folder;
-  });
-};
-
-// Delete Folder
-const handleDeleteFolder = (folders, folderId) => {
-  return folders.filter(folder => folder.id !== folderId)
-    .map(folder => ({
-      ...folder,
-      children: folder.children ? handleDeleteFolder(folder.children, folderId) : [],
-    }));
-};
-
-const handleDownloadFolder = async (folder) => {
-  const zip = new JSZip();
-
-  const addFilesToZip = (currentFolder, zipFolder) => {
-    currentFolder.files?.forEach(file => {
-      zipFolder.file(file.name, `Dummy content of ${file.name}`); // replace with file.blob if available
-    });
-
-    currentFolder.children?.forEach(childFolder => {
-      const childZip = zipFolder.folder(childFolder.name);
-      addFilesToZip(childFolder, childZip);
-    });
-  };
-
-  addFilesToZip(folder, zip);
-
-  const blob = await zip.generateAsync({ type: "blob" });
-  saveAs(blob, `${folder.name}.zip`);
-};
 
     return (
       <div className="p-4 ">
