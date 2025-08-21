@@ -1,26 +1,57 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
-import { Modal, } from 'react-bootstrap';
-import { Button, Autocomplete, TextField, Typography, Breadcrumbs, Link, Dialog, DialogTitle, Divider, DialogContent, DialogActions, Box, IconButton } from '@mui/material';
-import FileFolderCard from '../../componnets/FileFolderCard';
-import { useDispatch, useSelector } from 'react-redux';
-import { setShowAddFolderModal } from '../../Store/uploadSlice';
-import { addFolderToStructure, updateFolderWithFiles, getFileType, findFolderById } from '../../utils/helpers';
-import { useGlobalState } from '../../contexts/GlobalStateContext';
+import React, { useState, useEffect, useRef } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
+import { Modal } from "react-bootstrap";
+import {
+  Button,
+  Autocomplete,
+  TextField,
+  Typography,
+  Breadcrumbs,
+  Link,
+  Dialog,
+  DialogTitle,
+  Divider,
+  DialogContent,
+  DialogActions,
+  Box,
+  IconButton,
+} from "@mui/material";
+import FileFolderCard from "../../componnets/FileFolderCard";
+import { useDispatch, useSelector } from "react-redux";
+import { setShowAddFolderModal } from "../../Store/uploadSlice";
+import {
+  addFolderToStructure,
+  updateFolderWithFiles,
+  getFileType,
+  findFolderById,
+} from "../../utils/helpers";
+import { useGlobalState } from "../../contexts/GlobalStateContext";
 import CloseIcon from "@mui/icons-material/Close";
 import PictureAsPdfIcon from "@mui/icons-material/PictureAsPdf";
 import DescriptionIcon from "@mui/icons-material/Description";
 import ArticleIcon from "@mui/icons-material/Article";
-import { initialFolders } from './data';
+import { initialFolders } from "./data";
 
-
-import { resetFolderPath, setFolderPath, addFolderToPath, setActiveFolder } from '../../Store/breadcrumbSlice';
-import JSZip from 'jszip';
+import {
+  resetFolderPath,
+  setFolderPath,
+  addFolderToPath,
+  setActiveFolder,
+} from "../../Store/breadcrumbSlice";
+import JSZip from "jszip";
 import { saveAs } from "file-saver";
-import { Close, Delete, Download, DriveFileMove, PersonAddAlt } from '@mui/icons-material';
+import {
+  Close,
+  Delete,
+  Download,
+  DriveFileMove,
+  PersonAddAlt,
+} from "@mui/icons-material";
 
 const DocumentRepository = () => {
   const files = [
+    // { id: 7, type: "file", name: "TeamRoster.xlsx", typeofFile: "excel" },
+    // { id: 8, type: "file", name: "MarketingPlan.docx", typeofFile: "doc" },
     { id: 9, type: "file", name: "SystemArchitecture.pdf", typeofFile: "pdf" },
   ];
   const navigate = useNavigate();
@@ -37,28 +68,38 @@ const DocumentRepository = () => {
   const [selectedIds, setSelectedIds] = useState([]);
   const [lastSelectedIndex, setLastSelectedIndex] = useState(null);
 
-
-  // Retrieve folders from localStorage if available
-  //   const getInitialFolders = () => {
-  //     const storedFolders = localStorage.getItem("folders");
-  //     return storedFolders ? JSON.parse(storedFolders) : initialFolders;
-  //   };
-
+  const [focusedIndex, setFocusedIndex] = useState(null);
+  const [folderSelections, setFolderSelections] = useState({});
 
   const [folders, setFolders] = useState(initialFolders);
   const [selectedFolder, setSelectedFolder] = useState(folders[0]);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchTerm, setSearchTerm] = useState("");
   const [showAISearch, setShowAISearch] = useState(false);
-  const [newFolderName, setNewFolderName] = useState('');
+  const [newFolderName, setNewFolderName] = useState("");
   const [uploading, setUploading] = useState(false);
   const [previewFile, setPreviewFile] = useState(null);
-
-
-  const sortOptions = [
-    { label: "Last Viewed", value: "lastViewed" },
-    { label: "Edited", value: "edited" },
+  const columns = 4;
+  const sortDropDownOptions = [
+    { label: "Last modified" },
+    { label: "Last modified by me" },
+    { label: "Last opened by me" },
+    { label: "Name" },
   ];
-  const [sortBy, setSortBy] = useState(sortOptions[0]);
+  const selectRange = (newIndex) => {
+    if (focusedIndex === null) return;
+
+    const start = Math.min(focusedIndex, newIndex);
+    const end = Math.max(focusedIndex, newIndex);
+
+    const rangeIds = allItems.slice(start, end + 1).map((item) => item.id);
+    setSelectedIds((prev) => Array.from(new Set([...prev, ...rangeIds])));
+  };
+
+  const allItems = activeFolder
+    ? [...(activeFolder.children || []), ...(activeFolder.files || [])]
+    : [...folders, ...filesInitial];
+
+  const [sortBy, setSortBy] = useState(sortDropDownOptions[0]);
 
   const triggerFileInput = () => {
     if (fileInputRef.current) {
@@ -109,37 +150,101 @@ const DocumentRepository = () => {
     }, 1000);
   };
 
-  const handleItemClick = (event, item, index, list) => {
-    if (event.shiftKey && lastSelectedIndex !== null) {
-      // Select a range between last and current
-      const start = Math.min(lastSelectedIndex, index);
-      const end = Math.max(lastSelectedIndex, index);
-      const rangeIds = list.slice(start, end + 1).map(i => i.id);
-
-      setSelectedIds(prev => Array.from(new Set([...prev, ...rangeIds])));
-    } else {
-      // Single select
-      if (selectedIds.includes(item.id)) {
-        // Toggle off if already selected
-        setSelectedIds(prev => prev.filter(id => id !== item.id));
-      } else {
-        setSelectedIds([item.id]);
-      }
-      setLastSelectedIndex(index);
+  // Unified selection handler
+  const updateSelection = (newSelectedIds, focusIndex = null) => {
+    setSelectedIds(newSelectedIds);
+    if (activeFolder) {
+      setFolderSelections((prev) => ({
+        ...prev,
+        [activeFolder.id]: newSelectedIds,
+      }));
+    }
+    if (focusIndex !== null) {
+      setFocusedIndex(focusIndex);
     }
   };
 
-
-  const handleRename = (folders, fileId, newName) => {
-    return folders?.map(folder => ({
-      ...folder,
-      files: folder?.files.map(file =>
-        file.id === fileId ? { ...file, name: newName } : file
-      ),
-      children: handleRename(folder?.children || [], fileId, newName)
-    }));
+  // Mouse click handler
+  const handleItemClick = (e, item, index) => {
+    if (e.shiftKey && focusedIndex !== null) {
+      // Shift + click: select range
+      const start = Math.min(focusedIndex, index);
+      const end = Math.max(focusedIndex, index);
+      const rangeIds = allItems.slice(start, end + 1).map((i) => i.id);
+      updateSelection(
+        Array.from(new Set([...selectedIds, ...rangeIds])),
+        index
+      );
+    } else if (e.metaKey || e.ctrlKey) {
+      // Ctrl/Cmd click: toggle selection
+      if (selectedIds.includes(item.id)) {
+        updateSelection(
+          selectedIds.filter((id) => id !== item.id),
+          index
+        );
+      } else {
+        updateSelection([...selectedIds, item.id], index);
+      }
+    } else {
+      // Single click: select only this item
+      updateSelection([item.id], index);
+    }
   };
 
+  // Keyboard navigation handler
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (focusedIndex === null) return;
+      let newIndex = focusedIndex;
+      const columns = 4;
+
+      switch (e.key) {
+        case "ArrowDown":
+          newIndex = Math.min(focusedIndex + columns, allItems.length - 1);
+          break;
+        case "ArrowUp":
+          newIndex = Math.max(focusedIndex - columns, 0);
+          break;
+        case "ArrowRight":
+          newIndex = Math.min(focusedIndex + 1, allItems.length - 1);
+          break;
+        case "ArrowLeft":
+          newIndex = Math.max(focusedIndex - 1, 0);
+          break;
+        default:
+          return;
+      }
+
+      if (e.shiftKey) {
+        // Shift + arrow: extend selection
+        const start = Math.min(focusedIndex, newIndex);
+        const end = Math.max(focusedIndex, newIndex);
+        const rangeIds = allItems.slice(start, end + 1).map((i) => i.id);
+        updateSelection(
+          Array.from(new Set([...selectedIds, ...rangeIds])),
+          newIndex
+        );
+      } else {
+        // Arrow without shift: select only the focused item
+        updateSelection([allItems[newIndex].id], newIndex);
+      }
+
+      e.preventDefault();
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [focusedIndex, allItems, selectedIds]);
+
+  const handleRename = (folders, fileId, newName) => {
+    return folders?.map((folder) => ({
+      ...folder,
+      files: folder?.files.map((file) =>
+        file.id === fileId ? { ...file, name: newName } : file
+      ),
+      children: handleRename(folder?.children || [], fileId, newName),
+    }));
+  };
 
   const handleDelete = (folders, id) =>
     folders
@@ -164,9 +269,13 @@ const DocumentRepository = () => {
       parentId: activeFolder ? activeFolder.id : null,
       isExpanded: true,
       children: [],
-    }
+    };
     try {
-      const updatedFolders = addFolderToStructure(folders, newFolder, activeFolder ? activeFolder.id : null);
+      const updatedFolders = addFolderToStructure(
+        folders,
+        newFolder,
+        activeFolder ? activeFolder.id : null
+      );
       setFolders(updatedFolders);
       setSelectedFolder(newFolder);
       dispatch(setShowAddFolderModal(false));
@@ -189,47 +298,52 @@ const DocumentRepository = () => {
   };
 
   const onClear = () => {
-    setSelectedIds([])
-  }
+    setSelectedIds([]);
+  };
 
   const openFolder = (folder) => {
     dispatch(setActiveFolder(folder));
     dispatch(addFolderToPath(folder));
+
+    // Reset selection for this folder
+    setSelectedIds([]); // <-- Always clear selection when opening
+    setFocusedIndex(null);
   };
 
   const handleBreadcrumbClick = (index) => {
+    setSelectedIds([]);
     const newPath = folderPath.slice(0, index + 1);
     dispatch(setFolderPath(newPath));
-    dispatch(setActiveFolder(newPath[newPath.length - 1]))
+    dispatch(setActiveFolder(newPath[newPath.length - 1]));
   };
-
 
   const goHome = () => {
     dispatch(resetFolderPath());
   };
 
-
   const handleViewClick = (file) => {
     setPreviewFile(file);
-    console.log(file, "preview file")
-  }
+    console.log(file, "preview file");
+  };
 
   const handleClosePreview = () => {
-    setPreviewFile(null)
-  }
+    setPreviewFile(null);
+  };
 
   const handleDownloadClick = (file) => {
     console.log("Downloading file:", file.name);
-  }
-
+  };
 
   const handleRenameFolder = (folders, folderId, newName) => {
-    return folders.map(folder => {
+    return folders.map((folder) => {
       if (folder.id === folderId) {
         return { ...folder, name: newName };
       }
       if (folder.children) {
-        return { ...folder, children: handleRenameFolder(folder.children, folderId, newName) };
+        return {
+          ...folder,
+          children: handleRenameFolder(folder.children, folderId, newName),
+        };
       }
       return folder;
     });
@@ -237,10 +351,13 @@ const DocumentRepository = () => {
 
   // Delete Folder
   const handleDeleteFolder = (folders, folderId) => {
-    return folders.filter(folder => folder.id !== folderId)
-      .map(folder => ({
+    return folders
+      .filter((folder) => folder.id !== folderId)
+      .map((folder) => ({
         ...folder,
-        children: folder.children ? handleDeleteFolder(folder.children, folderId) : [],
+        children: folder.children
+          ? handleDeleteFolder(folder.children, folderId)
+          : [],
       }));
   };
 
@@ -248,11 +365,11 @@ const DocumentRepository = () => {
     const zip = new JSZip();
 
     const addFilesToZip = (currentFolder, zipFolder) => {
-      currentFolder.files?.forEach(file => {
+      currentFolder.files?.forEach((file) => {
         zipFolder.file(file.name, `Dummy content of ${file.name}`); // replace with file.blob if available
       });
 
-      currentFolder.children?.forEach(childFolder => {
+      currentFolder.children?.forEach((childFolder) => {
         const childZip = zipFolder.folder(childFolder.name);
         addFilesToZip(childFolder, childZip);
       });
@@ -320,17 +437,8 @@ const DocumentRepository = () => {
     }
   }, [folders, activeFolder, dispatch]);
 
-  const sortDropDownOptions = [
-    { label: "Last modified" },
-    { label: "Last modified by me" },
-    { label: "Last opened by me" },
-    { label: "Name" },
-  ];
-
-
   return (
     <div className="p-4 ">
-
       <input
         style={{ display: "none" }}
         ref={fileInputRef}
@@ -359,7 +467,7 @@ const DocumentRepository = () => {
           The file "{searchedFileName}" was not found in the repository.
         </div>
       )}
-      {selectedIds.length > 0 &&
+      {selectedIds.length > 0 && (
         <Box
           sx={{
             display: "flex",
@@ -416,8 +524,12 @@ const DocumentRepository = () => {
             />
           </Box>
         </Box>
-      }
-      <Breadcrumbs aria-label="breadcrumb" separator="›" sx={{ padding: "4px", color: 'black' }}>
+      )}
+      <Breadcrumbs
+        aria-label="breadcrumb"
+        separator="›"
+        sx={{ padding: "4px", color: "black" }}
+      >
         <Link
           underline="hover"
           color="inherit"
@@ -451,7 +563,7 @@ const DocumentRepository = () => {
       <div style={{ padding: "4px" }}>
         <div>
           <Typography variant="h6" sx={{ mb: 2 }}>
-            Folders
+            {!activeFolder ? "Folders" : "All Items"}
           </Typography>
           {!activeFolder ? (
             <>
@@ -463,10 +575,21 @@ const DocumentRepository = () => {
                       type={"folder"}
                       isSelected={selectedIds.includes(folder.id)}
                       name={folder.name}
-                      onClick={(e) => handleItemClick(e, folder, index, filesInitial)} // single click = select
-                      onDoubleClick={() => openFolder(folder)}                         // double click = open
+                      onClick={(e) =>
+                        handleItemClick(e, folder, index, filesInitial)
+                      } // single click = select
+                      onDoubleClick={() => {
+                        setSelectedIds([]); // Clear selection like Google Drive
+                        openFolder(folder); // Your existing logic
+                      }} // double click = open
                       onRename={(newName) => {
-                        const updated = handleRenameFolder(folders, folder.id, newName);
+                        console.log("RENAME3");
+
+                        const updated = handleRenameFolder(
+                          folders,
+                          folder.id,
+                          newName
+                        );
                         setFolders(updated);
                       }}
                       onDelete={() => {
@@ -475,7 +598,6 @@ const DocumentRepository = () => {
                       }}
                       onDownload={() => handleDownloadFolder(folder)}
                     />
-
                   ) : (
                     <FileFolderCard
                       key={folder.id}
@@ -485,6 +607,7 @@ const DocumentRepository = () => {
                       date={new Date(folder.uploadedAt).toLocaleDateString()}
                       typeofFile={folder.typeofFile}
                       onRename={(newName) => {
+                        console.log("RENAME");
                         const updated = handleRenameFolder(
                           folders,
                           folder.id,
@@ -492,15 +615,19 @@ const DocumentRepository = () => {
                         );
                         setFolders(updated);
                       }}
-                      isSelected={selectedIds.includes(folder.id)}   // NEW
-                      onClick={(e) => handleItemClick(e, folder, index, filesInitial)}
+                      isSelected={selectedIds.includes(folder.id)} // NEW
+                      onClick={(e) =>
+                        handleItemClick(e, folder, index, filesInitial)
+                      }
                       handleViewClick={() => handleViewClick(folder)}
                       handleDownloadClick={() => handleDownloadClick(folder)}
+                      onDoubleClick={() => {
+                        // maybe open preview for files
+                        setSelectedIds([]);
+                        handleViewClick(folder);
+                      }}
                       onDelete={() => {
-                        const updated = handleDeleteFolder(
-                          folders,
-                          folder.id
-                        );
+                        const updated = handleDeleteFolder(folders, folder.id);
                         setFolders(updated);
                       }}
                     />
@@ -512,14 +639,18 @@ const DocumentRepository = () => {
             <>
               <div style={{ display: "flex", flexWrap: "wrap", gap: "16px" }}>
                 {/*  Show subfolders */}
-                {activeFolder?.children?.map((folder) => (
+                {activeFolder?.children?.map((folder, index) => (
                   <FileFolderCard
                     key={folder.id}
-                    type={"folder"}
+                    type="folder"
                     name={folder.name}
-                    onClick={() => {
-                      dispatch(setActiveFolder(folder));
-                      dispatch(addFolderToPath(folder));
+                    isSelected={selectedIds.includes(folder.id)}
+                    // Single click: select only
+                    onClick={(e) => handleItemClick(e, folder, index)}
+                    // Double click: open folder
+                    onDoubleClick={() => {
+                      setSelectedIds([]); // clear selection like Google Drive
+                      openFolder(folder); // this will setActiveFolder and add to path
                     }}
                     // Rename
                     onRename={(newName) => {
@@ -530,13 +661,13 @@ const DocumentRepository = () => {
                       );
                       setFolders(updated);
                     }}
+                    // Delete
                     onDelete={() => {
                       const updated = handleDeleteFolder(folders, folder.id);
                       setFolders(updated);
                     }}
-                    onDownload={() => {
-                      handleDownloadFolder(folder);
-                    }}
+                    // Download
+                    onDownload={() => handleDownloadFolder(folder)}
                   />
                 ))}
 
@@ -544,13 +675,17 @@ const DocumentRepository = () => {
                   <FileFolderCard
                     key={file.id}
                     type="file"
-                    isSelected={selectedIds.includes(file.id)}   // NEW
-                    onClick={(e) => handleItemClick(e, file, index, filesInitial)}
+                    isSelected={selectedIds.includes(file.id)} // NEW
+                    onClick={(e) =>
+                      handleItemClick(e, file, index, filesInitial)
+                    }
                     name={file.name}
                     size={`${Math.round(file.size / 1024)} KB`}
                     date={new Date(file.uploadedAt).toLocaleDateString()}
                     typeofFile={file.typeofFile}
                     onRename={(newName) => {
+                      console.log("RENAME2");
+
                       const updated = handleRename(folders, file.id, newName);
                       setFolders(updated);
                       if (activeFolder) {
@@ -563,6 +698,11 @@ const DocumentRepository = () => {
                     }}
                     handleViewClick={() => handleViewClick(file)}
                     handleDownloadClick={() => handleDownloadClick(file)}
+                    onDoubleClick={() => {
+                      // maybe open preview for files
+                      setSelectedIds([]);
+                      handleViewClick(file);
+                    }}
                     onDelete={() => {
                       const updated = handleDelete(folders, file.id);
                       setFolders(updated);
@@ -581,38 +721,48 @@ const DocumentRepository = () => {
             </>
           )}
         </div>
-        {/* Files Section */}
-        <Typography variant="h6" sx={{ mt: 4, mb: 2 }}>
-          Files
-        </Typography>
-        <div style={{ display: "flex", flexWrap: "wrap", gap: "16px" }}>
-          {filesInitial.map((file, index) => (
-            <FileFolderCard
-              key={file.id}
-              type="file"
-              isSelected={selectedIds.includes(file.id)}   // NEW
-              onClick={(e) => handleItemClick(e, file, index, filesInitial)}
-              name={file.name}
-              size={`${Math.round(file.size / 1024)} KB`}
-              date={new Date(file.uploadedAt).toLocaleDateString()}
-              typeofFile={file.typeofFile}
-              onRename={(newName) => {
-                const updatedFiles = filesInitial.map((f) =>
-                  f.id === file.id ? { ...f, name: newName } : f
-                );
-                setFilesIntial(updatedFiles);
-              }}
-              onDelete={() => {
-                const updatedFiles = filesInitial.filter(
-                  (f) => f.id !== file.id
-                );
-                setFilesIntial(updatedFiles);
-              }}
-              handleViewClick={() => handleViewClick(file)}
-              handleDownloadClick={() => handleDownloadClick(file)}
-            />
-          ))}
-        </div>
+        {!activeFolder && (
+          <>
+            <Typography variant="h6" sx={{ mt: 4, mb: 2 }}>
+              Files
+            </Typography>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: "16px" }}>
+              {filesInitial.map((file, index) => (
+                <FileFolderCard
+                  key={file.id}
+                  type="file"
+                  isSelected={selectedIds.includes(file.id)} // NEW
+                  onClick={(e) => handleItemClick(e, file, index, filesInitial)}
+                  name={file.name}
+                  size={`${Math.round(file.size / 1024)} KB`}
+                  date={new Date(file.uploadedAt).toLocaleDateString()}
+                  typeofFile={file.typeofFile}
+                  onRename={(newName) => {
+                    console.log("RENAME4");
+
+                    const updatedFiles = filesInitial.map((f) =>
+                      f.id === file.id ? { ...f, name: newName } : f
+                    );
+                    setFilesIntial(updatedFiles);
+                  }}
+                  onDelete={() => {
+                    const updatedFiles = filesInitial.filter(
+                      (f) => f.id !== file.id
+                    );
+                    setFilesIntial(updatedFiles);
+                  }}
+                  handleViewClick={() => handleViewClick(file)}
+                  onDoubleClick={() => {
+                    // maybe open preview for files
+                    setSelectedIds([]);
+                    handleViewClick(file);
+                  }}
+                  handleDownloadClick={() => handleDownloadClick(file)}
+                />
+              ))}
+            </div>
+          </>
+        )}
       </div>
 
       <Modal
@@ -621,9 +771,7 @@ const DocumentRepository = () => {
         centered
         dialogClassName="custom-modal"
       >
-        <Modal.Header
-          style={{ borderBottom: "none", padding: "1rem 1.5rem" }}
-        >
+        <Modal.Header style={{ borderBottom: "none", padding: "1rem 1.5rem" }}>
           <Modal.Title style={{ fontWeight: "500", fontSize: "1.25rem" }}>
             New Folder
           </Modal.Title>
@@ -646,9 +794,7 @@ const DocumentRepository = () => {
           />
         </Modal.Body>
 
-        <Modal.Footer
-          style={{ borderTop: "none", padding: "0.75rem 1.5rem" }}
-        >
+        <Modal.Footer style={{ borderTop: "none", padding: "0.75rem 1.5rem" }}>
           <Button
             variant="light"
             onClick={() => dispatch(setShowAddFolderModal(false))}
@@ -725,7 +871,9 @@ const DocumentRepository = () => {
             alignItems: "center",
           }}
         >
-          {previewFile && previewFile?.typeofFile !== "img" && previewFile?.typeofFile !== "invoicepdf" ? (
+          {previewFile &&
+          previewFile?.typeofFile !== "img" &&
+          previewFile?.typeofFile !== "invoicepdf" ? (
             <iframe
               src="/files/repo.pdf"
               style={{ width: "100%", height: "80vh", border: "none" }}
@@ -736,17 +884,9 @@ const DocumentRepository = () => {
               <iframe
                 src="/files/Screenshot.png"
                 style={{ width: "100%", height: "100vh", border: "none" }}
-                // style={{
-                //   maxWidth: "100%",
-                //   maxHeight: "80vh",
-                //   objectFit: "contain",
-                //   display: "block",
-                //   margin: "0 auto",
-                // }}
                 title="img"
               />
             </div>
-
           ) : previewFile?.typeofFile === "invoicepdf" ? (
             <div style={{ width: "100%", height: "100vh" }}>
               <iframe
@@ -755,7 +895,6 @@ const DocumentRepository = () => {
                 title="invoce pdf"
               />
             </div>
-
           ) : (
             <Typography
               variant="body2"
@@ -765,52 +904,7 @@ const DocumentRepository = () => {
               No preview available.
             </Typography>
           )}
-          {/* {previewFile ? (
-              <iframe
-                src={previewFile.url}
-                style={{ width: "100%", height: "80vh", border: "none" }}
-                title="PDF Preview"
-              />
-            ) : previewFile?.typeofFile === "txt" ? (
-              <Box
-                sx={{
-                  width: "100%",
-                  bgcolor: "#fafafa",
-                  p: 2,
-                  borderRadius: 2,
-                  fontFamily: "monospace",
-                  fontSize: "0.95rem",
-                  whiteSpace: "pre-wrap",
-                  lineHeight: 1.6,
-                  boxShadow: "inset 0 0 6px rgba(0,0,0,0.1)",
-                }}
-              >
-             
-                Sample text file preview...
-              </Box>
-            ) : previewFile?.typeofFile === "doc" ||
-              previewFile?.typeofFile === "excel" ? (
-              <Typography
-                variant="body2"
-                color="text.secondary"
-                textAlign="center"
-              >
-                Preview not supported for <b>{previewFile.typeofFile}</b>.{" "}
-                <br />
-                Please download the file instead.
-              </Typography>
-            ) : (
-              <Typography
-                variant="body2"
-                color="text.secondary"
-                textAlign="center"
-              >
-                No preview available.
-              </Typography>
-            )} */}
         </DialogContent>
-
-        {/* Footer */}
         <DialogActions sx={{ px: 3, py: 2, bgcolor: "#fafafa" }}>
           <Button
             onClick={handleClosePreview}
