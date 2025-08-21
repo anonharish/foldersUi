@@ -10,6 +10,7 @@ import IconButton from "@mui/material/IconButton";
 import CloseIcon from "@mui/icons-material/Close";
 import Typography from "@mui/material/Typography";
 import Tooltip from '@mui/material/Tooltip';
+import { sampleResponse,sampleHistory } from "./sampleAiSearchResponse";
 
 const BootstrapDialog = styled(Dialog)(({ theme }) => ({
   "& .MuiDialogContent-root": {
@@ -141,7 +142,7 @@ const AISearchDashboard = () => {
   const [prompt, setPrompt] = useState("");
   const [searchResults, setSearchResults] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [searchHistory, setSearchHistory] = useState([]);
+  const [searchHistory, setSearchHistory] = useState(sampleHistory);
   const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
   const [messages, setMessages] = useState([
     {
@@ -185,17 +186,19 @@ const AISearchDashboard = () => {
     setMessages((prev) => [...prev, { type: "user", content: searchQuery }]);
 
     try {
-      const response = await fetch(
-        `http://localhost:8084/iassure/api/incident/search?query=${encodeURIComponent(
-          searchQuery
-        )}`,
-        {
-          method: "GET",
-          headers: { "Content-Type": "application/json" },
-        }
-      );
-
-      const data = await response.json();
+      // const response = await fetch(
+      //   `http://localhost:8084/iassure/api/incident/search?query=${encodeURIComponent(
+      //     searchQuery
+      //   )}`,
+      //   {
+      //     method: "GET",
+      //     headers: { "Content-Type": "application/json" },
+      //   }
+      // );
+      // const data = await response.json();
+      await new Promise((res) => setTimeout(res, 800));
+      const data = sampleResponse;
+      
       console.log(data);
 
       if (data && data.top_results) {

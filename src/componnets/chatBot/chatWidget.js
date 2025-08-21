@@ -20,8 +20,7 @@ import { motion } from "framer-motion";
 import { TypeAnimation } from "react-type-animation";
 import chatBot from "../../assets/chatbot.png";
 import FloatingChatIcon from "./FloatChatBot";
-
-
+import { sampleResponse } from "../incidents/sampleAiSearchResponse";
 
 const dummyBotResponse = {
   answer: "Here is a dummy response with table and suggestions.",
@@ -30,8 +29,12 @@ const dummyBotResponse = {
     { Name: "Alice", Age: 25, Role: "Engineer" },
     { Name: "Bob", Age: 30, Role: "Designer" },
   ],
-  followupQuestions: ["Show me more data", "What is Alice’s role?", "Give me charts"],
-  dashboard: [] // you can keep empty for now
+  followupQuestions: [
+    "Show me more data",
+    "What is Alice’s role?",
+    "Give me charts",
+  ],
+  dashboard: [], // you can keep empty for now
 };
 
 // Typing Indicator
@@ -68,7 +71,10 @@ const renderTable = (tableData, tableTitle) => {
           <TableHead>
             <TableRow sx={{ bgcolor: "#e3f2fd" }}>
               {columns.map((column) => (
-                <TableCell key={column} sx={{ fontWeight: 600, color: "#0d47a1" }}>
+                <TableCell
+                  key={column}
+                  sx={{ fontWeight: 600, color: "#0d47a1" }}
+                >
                   {column}
                 </TableCell>
               ))}
@@ -101,6 +107,7 @@ const ChatWidget = () => {
   ]);
   const [inputValue, setInputValue] = useState("");
   const [isTyping, setIsTyping] = useState(false);
+  const [selectedDoc, setSelectedDoc] = useState(null);
   const messagesEndRef = useRef(null);
 
   useEffect(() => {
@@ -139,7 +146,8 @@ const ChatWidget = () => {
     setTimeout(() => {
       const botMsg = {
         id: (Date.now() + 1).toString(),
-        text: dummyBotResponse.answer,
+        text: `I found ${sampleResponse.top_results.length} documents.`,
+        results: sampleResponse.top_results,
         isUser: false,
         tableData: dummyBotResponse.table_data,
         tableTitle: dummyBotResponse.table_title,
@@ -173,116 +181,231 @@ const ChatWidget = () => {
             zIndex: 1250,
           }}
         >
-          <Box sx={{ width: "100vw", height: "100vh", bgcolor: "white", display: "flex", flexDirection: "column" }}>
+          <Box
+            sx={{
+              width: "100vw",
+              height: "100vh",
+              bgcolor: "white",
+              display: "flex",
+              flexDirection: "column",
+            }}
+          >
             {/* Header */}
-            <Box sx={{ display: "flex", alignItems: "center", px: 2, py: 1, background: "#3b54b0", color: "white" }}>
+            <Box
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                px: 2,
+                py: 1,
+                background: "#3b54b0",
+                color: "white",
+              }}
+            >
               <Avatar sx={{ bgcolor: "#ea641f", width: 40, height: 40 }}>
                 <SmartToy />
               </Avatar>
               <Typography variant="subtitle1" fontWeight={600} ml={2}>
-                AI Assistant
+                AI Document Search
               </Typography>
               <Box ml="auto">
-                <IconButton size="small" onClick={handleClose} sx={{ color: "white" }}>
+                <IconButton
+                  size="small"
+                  onClick={handleClose}
+                  sx={{ color: "white" }}
+                >
                   <Close />
                 </IconButton>
               </Box>
             </Box>
+            <Box sx={{ flex: 1, display: "flex" }}>
+              {/* Left side: Chat area */}
+              <Box
+                sx={{
+                  flex: 1.5,
+                  display: "flex",
+                  flexDirection: "column",
+                  bgcolor: "#f9fafb",
+                  height: "90vh",
+                }}
+              >
+                {/* Scrollable messages */}
+                <Box sx={{ flex: 1, overflowY: "auto", p: 2 }}>
+                  <Stack spacing={2}>
+                    {messages.map((msg) => (
+                      <Box
+                        key={msg.id}
+                        display="flex"
+                        justifyContent={msg.isUser ? "flex-end" : "flex-start"}
+                      >
+                        <Box
+                          sx={{
+                            bgcolor: msg.isUser ? "#ea641f" : "#f4f6f8",
+                            color: msg.isUser ? "white" : "black",
+                            p: 1.5,
+                            borderRadius: 2,
+                            maxWidth: "50%",
+                            whiteSpace: "pre-wrap",
+                          }}
+                        >
+                          {msg.isUser ? (
+                            <span>{msg.text}</span>
+                          ) : !msg.isTypingComplete ? (
+                            <TypeAnimation
+                              sequence={[
+                                msg.text,
+                                () => {
+                                  setMessages((prev) =>
+                                    prev.map((m) =>
+                                      m.id === msg.id
+                                        ? { ...m, isTypingComplete: true }
+                                        : m
+                                    )
+                                  );
+                                },
+                              ]}
+                              wrapper="span"
+                              cursor={false}
+                              speed={70}
+                            />
+                          ) : (
+                            <span>{msg.text}</span>
+                          )}
 
-            {/* Messages */}
-            <Box sx={{ flex: 1, overflowY: "auto", p: 2, bgcolor: "#f9fafb" }}>
-              <Stack spacing={2}>
-                {messages.map((msg) => (
-                  <Box
-                    key={msg.id}
-                    display="flex"
-                    justifyContent={msg.isUser ? "flex-end" : "flex-start"}
-                  >
+                          {/* documents */}
+                          {!msg.isUser &&
+                            msg.isTypingComplete &&
+                            msg.results && (
+                              <Box sx={{ mt: 1 }}>
+                                {msg.results.map((doc, i) => (
+                                  <Paper
+                                    key={i}
+                                    sx={{
+                                      p: 1,
+                                      mb: 1,
+                                      border: "1px solid #ddd",
+                                      borderRadius: 1,
+                                    }}
+                                  >
+                                    <Typography
+                                      variant="body2"
+                                      fontWeight={600}
+                                    >
+                                      {doc.fileName}
+                                    </Typography>
+                                    <Typography
+                                      variant="caption"
+                                      color="text.secondary"
+                                    >
+                                      {doc.content.slice(0, 100)}...
+                                    </Typography>
+                                    <Button
+                                      size="small"
+                                      sx={{ mt: 1 }}
+                                      onClick={() => setSelectedDoc(doc)}
+                                    >
+                                      View
+                                    </Button>
+                                  </Paper>
+                                ))}
+                              </Box>
+                            )}
+
+                          {/* table */}
+                          {!msg.isUser &&
+                            msg.isTypingComplete &&
+                            msg.tableData &&
+                            renderTable(msg.tableData, msg.tableTitle)}
+                        </Box>
+                      </Box>
+                    ))}
+
+                    {isTyping && (
+                      <Box
+                        sx={{ display: "flex", justifyContent: "flex-start" }}
+                      >
+                        <Avatar sx={{ bgcolor: "#3b54b0", mr: 1 }}>
+                          <img src={chatBot} alt="bot" width={20} />
+                        </Avatar>
+                        <TypingIndicator />
+                      </Box>
+                    )}
+                    <div ref={messagesEndRef} />
+                  </Stack>
+                </Box>
+
+                {/* Suggestions (always above input, not scrolling) */}
+                {messages.length > 0 &&
+                  messages[messages.length - 1].followupQuestions?.length >
+                    0 && (
                     <Box
                       sx={{
-                        bgcolor: msg.isUser ? "#ea641f" : "#f4f6f8",
-                        color: msg.isUser ? "white" : "black",
-                        p: 1.5,
-                        borderRadius: 2,
-                        maxWidth: "70%",
-                        whiteSpace: "pre-wrap",
+                        p: 1,
+                        display: "flex",
+                        gap: 1,
+                        flexWrap: "wrap",
+                        bgcolor: "#f9fafb",
+                        borderTop: "1px solid #eee",
                       }}
                     >
-                      {msg.isUser ? (
-                        <span>{msg.text}</span>
-                      ) : !msg.isTypingComplete ? (
-                        <TypeAnimation
-                          sequence={[
-                            msg.text,
-                            () => {
-                              setMessages((prev) =>
-                                prev.map((m) =>
-                                  m.id === msg.id ? { ...m, isTypingComplete: true } : m
-                                )
-                              );
-                            },
-                          ]}
-                          wrapper="span"
-                          cursor={false}
-                          speed={70}
-                        />
-                      ) : (
-                        <span>{msg.text}</span>
-                      )}
-
-                      {/* show table after typing */}
-                      {!msg.isUser && msg.isTypingComplete && msg.tableData && (
-                        renderTable(msg.tableData, msg.tableTitle)
+                      {messages[messages.length - 1].followupQuestions.map(
+                        (s, i) => (
+                          <Button
+                            key={i}
+                            size="small"
+                            variant="outlined"
+                            onClick={() => handleSuggestionClick(s)}
+                          >
+                            {s}
+                          </Button>
+                        )
                       )}
                     </Box>
-                  </Box>
-                ))}
+                  )}
 
-                {isTyping && (
-                  <Box sx={{ display: "flex", justifyContent: "flex-start" }}>
-                    <Avatar sx={{ bgcolor: "#3b54b0", mr: 1 }}>
-                      <img src={chatBot} alt="bot" width={20} />
-                    </Avatar>
-                    <TypingIndicator />
-                  </Box>
-                )}
-
-                <div ref={messagesEndRef} />
-              </Stack>
-            </Box>
-
-            {/* Suggestions */}
-            <Box sx={{ p: 1, display: "flex", gap: 1, flexWrap: "wrap" }}>
-              {messages.length > 0 &&
-                messages[messages.length - 1].followupQuestions?.map((s, i) => (
+                {/* Input (always fixed at very bottom) */}
+                <Box
+                  sx={{
+                    display: "flex",
+                    p: 2,
+                    borderTop: "1px solid #ccc",
+                    bgcolor: "white",
+                  }}
+                >
+                  <TextField
+                    fullWidth
+                    placeholder="Type your message..."
+                    value={inputValue}
+                    onChange={(e) => setInputValue(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && handleSendMessage()}
+                  />
                   <Button
-                    key={i}
-                    size="small"
-                    variant="outlined"
-                    onClick={() => handleSuggestionClick(s)}
+                    variant="contained"
+                    onClick={handleSendMessage}
+                    disabled={!inputValue.trim()}
+                    sx={{ ml: 1, bgcolor: "#3b54b0" }}
                   >
-                    {s}
+                    <Send />
                   </Button>
-                ))}
-            </Box>
+                </Box>
+              </Box>
 
-            {/* Input */}
-            <Box sx={{ display: "flex", p: 2, borderTop: "1px solid #ccc", bgcolor: "white" }}>
-              <TextField
-                fullWidth
-                placeholder="Type your message..."
-                value={inputValue}
-                onChange={(e) => setInputValue(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && handleSendMessage()}
-              />
-              <Button
-                variant="contained"
-                onClick={handleSendMessage}
-                disabled={!inputValue.trim()}
-                sx={{ ml: 1, bgcolor: "#3b54b0" }}
-              >
-                <Send />
-              </Button>
+              {/* Right side: Preview */}
+              <Box sx={{ flex: 1, borderLeft: "1px solid #ddd", p: 2 }}>
+                {selectedDoc ? (
+                  <>
+                    <Typography fontWeight={600}>
+                      {selectedDoc.fileName}
+                    </Typography>
+                    <Typography variant="body2" sx={{ mt: 1 }}>
+                      {selectedDoc.content}
+                    </Typography>
+                  </>
+                ) : (
+                  <Typography variant="caption" color="text.secondary">
+                    Select a document to preview
+                  </Typography>
+                )}
+              </Box>
             </Box>
           </Box>
         </motion.div>
