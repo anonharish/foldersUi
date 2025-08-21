@@ -1,5 +1,5 @@
 // Utility function to find a folder by ID (optional, but useful)
-const getFileType = (filename) => {
+export const getFileType = (filename) => {
   const extension = filename.split('.').pop().toLowerCase();
   const typeMap = {
     'pdf': 'pdf',

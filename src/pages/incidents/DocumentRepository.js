@@ -6,7 +6,7 @@ import { Autocomplete, TextField, Typography, Breadcrumbs, Link, Dialog, DialogT
 import FileFolderCard from '../../componnets/FileFolderCard';
 import { useDispatch, useSelector } from 'react-redux';
 import { setShowAddFolderModal } from '../../Store/uploadSlice';
-import { addFolderToStructure, updateFolderWithFiles } from '../../utils/helpers';
+import { addFolderToStructure, updateFolderWithFiles, getFileType } from '../../utils/helpers';
 import { useGlobalState } from '../../contexts/GlobalStateContext';
 import NavigateNextIcon from "@mui/icons-material/NavigateNext";
 import CloseIcon from "@mui/icons-material/Close";
@@ -209,20 +209,30 @@ const DocumentRepository = () => {
         };
     }, [setUploadTrigger]);
     const handleFileUpload = (event) => {
-        const files = Array.from(event.target.files);
-        if (!files.length || !activeFolder) return;
+    const files = Array.from(event.target.files);
+    if (!files.length) return;
 
-        setUploading(true);
+    setUploading(true);
 
-        // Simulate async upload delay
-        setTimeout(() => {
-            setFolders((prevFolders) => {
-                // Recursive function to find and update the active folder
+    setTimeout(() => {
+        setFolders((prevFolders) => {
+            let updatedFolders;
 
-
-                const updatedFolders = updateFolderWithFiles(prevFolders, activeFolder.id, files);
-
-                // Find the updated active folder to update state
+            if (!activeFolder) {
+                updatedFolders = [
+                    ...prevFolders,
+                    ...files.map((file) => ({
+                        id: Date.now() + Math.random(),
+                        name: file.name,
+                        type: "file",
+                        size: file.size,
+                        uploadedAt: new Date().toISOString(),
+                        url: "#",
+                        typeofFile: getFileType(file.name),
+                    })),
+                ];
+            } else {
+                updatedFolders = updateFolderWithFiles(prevFolders, activeFolder.id, files);
                 const findFolderById = (folders, id) => {
                     for (const folder of folders) {
                         if (folder.id === id) return folder;
@@ -236,14 +246,15 @@ const DocumentRepository = () => {
 
                 const updatedActiveFolder = findFolderById(updatedFolders, activeFolder.id);
                 setActiveFolder(updatedActiveFolder);
+            }
 
-                return updatedFolders;
-            });
+            return updatedFolders;
+        });
 
-            setUploading(false);
-            event.target.value = "";
-        }, 1000);
-    };
+        setUploading(false);
+        event.target.value = "";
+    }, 1000);
+};
 
     const handleFileDelete = (fileId) => {
         setFolders((prevFolders) => {
@@ -511,382 +522,434 @@ const handleDownloadFolder = async (folder) => {
 };
 
     return (
-        <div className="p-4 ">
-            <Breadcrumbs aria-label="breadcrumb" sx={{ mb: 2 }} separator="›">
-                <Link
-                    underline="hover"
-                    color="inherit"
-                    onClick={goHome}
-                    sx={{ cursor: "pointer" }}
-                >
-                    Home
-                </Link>
+      <div className="p-4 ">
+        <Breadcrumbs aria-label="breadcrumb" sx={{ mb: 2 }} separator="›">
+          <Link
+            underline="hover"
+            color="inherit"
+            onClick={goHome}
+            sx={{ cursor: "pointer" }}
+          >
+            Home
+          </Link>
 
-                {/* Dynamic Folders Path */}
-                {Array.isArray(folderPath) && folderPath.map((folder, index) => {
-                    const isLast = index === folderPath.length - 1;
-                    return isLast ? (
-                        <Typography style={{ color: "blue" }} key={folder.id}>
-                            {folder.name}
-                        </Typography>
-                    ) : (
-                        <Link
-                            underline="hover"
-                            color="inherit"
-                            key={folder.id}
-                            onClick={() => handleBreadcrumbClick(index)}
-                            sx={{ cursor: "pointer" }}
-                        >
-                            {folder.name}
-                        </Link>
-                    );
-                })}
-            </Breadcrumbs>           
-            <input
-                style={{ display: "none" }}
-                ref={fileInputRef}
-                type="file"
-                multiple
-                hidden
-                onChange={handleFileUpload}
-                disabled={uploading} // prevent multiple clicks
-            />
-            {uploading && (
-                <div
-                    className="position-fixed top-0 start-0 w-100 h-100 d-flex justify-content-center align-items-center bg-dark bg-opacity-50"
-                    style={{ zIndex: 2000 }}
-                >
-                    <div
-                        className="spinner-border text-light"
-                        role="status"
-                        style={{ width: "3rem", height: "3rem" }}
-                    >
-                        <span className="visually-hidden">Uploading...</span>
-                    </div>
-                </div>
-            )}
-            {fileNotFound && searchedFileName && (
-                <div className="alert alert-warning mb-4" role="alert">
-                    The file "{searchedFileName}" was not found in the repository.
-                </div>
-            )}
-
-            <div
-                className="row align-items-center"
-                style={{
-                    border: "1px solid #c4c4c4",
-                    borderRadius: "8px",
-                    padding: "8px 12px",
-                    background: "white",
-                    margin: "0px",
-                }}
-            >
-                <div className="col-md-6">
-                    <span style={{ fontSize: "14px", color: "#333" }}>8 items</span>
-                </div>
-                <div className="col-md-6 d-flex justify-content-end">
-                    <Autocomplete
-                        options={sortOptions}
-                        value={sortBy}
-                        onChange={(event, newValue) => setSortBy(newValue)}
-                        getOptionLabel={(option) => option.label}
-                        sx={{ width: 200 }}
-                        renderInput={(params) => (
-                            <TextField
-                                {...params}
-                                label="Sort By"
-                                size="small"
-                                style={{ backgroundColor: "transparent" }}
-                            />
-                        )}
-                    />
-                </div>
-            </div>
-
-            <div style={{ padding: "16px" }}>
-                <div>
-                    <Typography variant="h6" sx={{ mt: 4, mb: 2 }}>
-                        Folders
-                    </Typography>
-                    {!activeFolder ? (
-                        <>
-                            <div style={{ display: "flex", flexWrap: "wrap", gap: "16px" }}>
-                                {folders.map((folder) => (
-
-<FileFolderCard
-  key={folder.id}
-  type="folder"
-  name={folder.name}
-                                        onClick={() => openFolder(folder)}
-                                        // Rename
-  onRename={(newName) => {
-    const updated = handleRenameFolder(folders, folder.id, newName);
-    setFolders(updated);
-  }}
-  onDelete={() => {
-    const updated = handleDeleteFolder(folders, folder.id);
-    setFolders(updated);
-  }}
-  onDownload={() => {
-    handleDownloadFolder(folder);
-  }}
-/>
-                                ))}
-                            </div>
-                        </>
-                    ) : (
-                        <>
-
-
-                            <div style={{ display: "flex", flexWrap: "wrap", gap: "16px" }}>
-                                {/*  Show subfolders */}
-                                {activeFolder?.children?.map((folder) => (
-                                    <FileFolderCard
-                                        key={folder.id}
-                                        type="folder"
-                                        name={folder.name}
-                                        onClick={() => {
-                                            dispatch(setActiveFolder(folder));
-                                            dispatch(addFolderToPath(folder));
-                                        }}
-                                        // Rename
-  onRename={(newName) => {
-    const updated = handleRenameFolder(folders, folder.id, newName);
-    setFolders(updated);
-  }}
-  onDelete={() => {
-    const updated = handleDeleteFolder(folders, folder.id);
-    setFolders(updated);
-  }}
-  onDownload={() => {
-    handleDownloadFolder(folder);
-  }}
-
-                                    />
-                                ))}
-
-                                {activeFolder.files.map((file) => (
-                                    <FileFolderCard
-                                        key={file.id}
-                                        type="file"
-                                        name={file.name}
-                                        size={`${Math.round(file.size / 1024)} KB`}
-                                        date={new Date(file.uploadedAt).toLocaleDateString()}
-                                        typeofFile={file.typeofFile}
-                             onRename={(newName) => {
-  const updated = handleRename(folders, file.id, newName);
-  setFolders(updated);
-  if (activeFolder) {
-    const refreshed = findFolderById(updated, activeFolder.id);
-    dispatch(setActiveFolder(refreshed || null));
-  }
-}}
-   handleViewClick={() => handleViewClick(file)}
-                                        handleDownloadClick={() => handleDownloadClick(file)}
-
-onDelete={() => {
-  const updated = handleDelete(folders, file.id);
-  setFolders(updated);
-
-  if (activeFolder) {
-    const refreshed = findFolderById(updated, activeFolder.id);
-    dispatch(setActiveFolder(refreshed || null));
-  }
-}}
-                                    />
-                                ))}
-                            </div>
-                        </>
-                    )}
-                </div>
-                {/* Files Section */}
-                <Typography variant="h6" sx={{ mt: 4, mb: 2 }}>
-                    Files
+          {/* Dynamic Folders Path */}
+          {Array.isArray(folderPath) &&
+            folderPath.map((folder, index) => {
+              const isLast = index === folderPath.length - 1;
+              return isLast ? (
+                <Typography style={{ color: "blue" }} key={folder.id}>
+                  {folder.name}
                 </Typography>
-                <div style={{ display: "flex", flexWrap: "wrap", gap: "16px" }}>
-                    {filesInitial.map((file) => (
-                        <FileFolderCard
-                            key={file.id}
-                            type="file"
-                            name={file.name}
-                            size={`${Math.round(file.size / 1024)} KB`}
-                            date={new Date(file.uploadedAt).toLocaleDateString()}
-                            typeofFile={file.typeofFile}
-                            onRename={(newName) => {
-                                const updatedFiles = filesInitial.map((f) =>
-                                    f.id === file.id ? { ...f, name: newName } : f
-                                );
-                                setFilesIntial(updatedFiles);
-                            }}
-                            onDelete={() => {
-                                const updatedFiles = filesInitial.filter(
-                                    (f) => f.id !== file.id
-                                );
-                                setFilesIntial(updatedFiles);
-                            }}
-                            handleViewClick={() => handleViewClick(file)}
-                            handleDownloadClick={() => handleDownloadClick(file)}
-                        />
-                    ))}
-                </div>
+              ) : (
+                <Link
+                  underline="hover"
+                  color="inherit"
+                  key={folder.id}
+                  onClick={() => handleBreadcrumbClick(index)}
+                  sx={{ cursor: "pointer" }}
+                >
+                  {folder.name}
+                </Link>
+              );
+            })}
+        </Breadcrumbs>
+        <input
+          style={{ display: "none" }}
+          ref={fileInputRef}
+          type="file"
+          multiple
+          hidden
+          onChange={handleFileUpload}
+          disabled={uploading} // prevent multiple clicks
+        />
+        {uploading && (
+          <div
+            className="position-fixed top-0 start-0 w-100 h-100 d-flex justify-content-center align-items-center bg-dark bg-opacity-50"
+            style={{ zIndex: 2000 }}
+          >
+            <div
+              className="spinner-border text-light"
+              role="status"
+              style={{ width: "3rem", height: "3rem" }}
+            >
+              <span className="visually-hidden">Uploading...</span>
             </div>
+          </div>
+        )}
+        {fileNotFound && searchedFileName && (
+          <div className="alert alert-warning mb-4" role="alert">
+            The file "{searchedFileName}" was not found in the repository.
+          </div>
+        )}
 
-            <Modal
-                show={showAddFolderModal}
-                onHide={() => dispatch(setShowAddFolderModal(false))}
-                centered
-                dialogClassName="custom-modal"
-            >
-                <Modal.Header style={{ borderBottom: "none", padding: "1rem 1.5rem" }}>
-                    <Modal.Title style={{ fontWeight: "500", fontSize: "1.25rem" }}>
-                        New Folder
-                    </Modal.Title>
-                </Modal.Header>
-
-                <Modal.Body style={{ padding: "1rem 1.5rem" }}>
-                    <input
-                        type="text"
-                        value={newFolderName}
-                        onChange={(e) => setNewFolderName(e.target.value)}
-                        placeholder="Folder name"
-                        className="form-control"
-                        style={{
-                            borderRadius: "8px",
-                            border: "1px solid #ccc",
-                            padding: "0.5rem 0.75rem",
-                            fontSize: "1rem",
-                            outline: "none",
-                        }}
-                    />
-                </Modal.Body>
-
-                <Modal.Footer style={{ borderTop: "none", padding: "0.75rem 1.5rem" }}>
-                    <Button
-                        variant="light"
-                        onClick={() => dispatch(setShowAddFolderModal(false))}
-                        style={{
-                            borderRadius: "8px",
-                            border: "1px solid #ccc",
-                            fontWeight: "500",
-                            padding: "0.5rem 1rem",
-                        }}
-                    >
-                        Cancel
-                    </Button>
-                    <Button
-                        variant="primary"
-                        onClick={handleSaveNewFolder}
-                        style={{
-                            borderRadius: "8px",
-                            padding: "0.5rem 1rem",
-                            fontWeight: "500",
-                        }}
-                    >
-                        OK
-                    </Button>
-                </Modal.Footer>
-            </Modal>
-
-
-            <Dialog
-                open={Boolean(previewFile)}
-                onClose={handleClosePreview}
-                maxWidth="md"
-                fullWidth
-                PaperProps={{
-                    sx: { borderRadius: 3, overflow: "hidden" },
-                }}
-            >
-                {/* Header */}
-                <DialogTitle
-                    sx={{
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "space-between",
-                        bgcolor: "#f5f5f5",
-                        px: 3,
-                        py: 2,
-                    }}
-                >
-                    <Box display="flex" alignItems="center" gap={1}>
-                        {previewFile?.typeofFile === "pdf" ? (
-                            <PictureAsPdfIcon color="error" />
-                        ) : previewFile?.typeofFile === "txt" ? (
-                            <ArticleIcon color="primary" />
-                        ) : (
-                            <DescriptionIcon color="action" />
-                        )}
-                        <Typography variant="h6" noWrap>
-                            {previewFile?.name}
-                        </Typography>
-                    </Box>
-                    <IconButton onClick={handleClosePreview}>
-                        <CloseIcon />
-                    </IconButton>
-                </DialogTitle>
-
-                <Divider />
-
-                {/* Content */}
-                <DialogContent
-                    dividers
-                    sx={{
-                        bgcolor: "background.default",
-                        minHeight: "400px",
-                        display: "flex",
-                        justifyContent: "center",
-                        alignItems: "center",
-                    }}
-                >
-                    {previewFile?.typeofFile === "pdf" ? (
-                        <iframe
-                            src={previewFile.url}
-                            style={{ width: "100%", height: "80vh", border: "none" }}
-                            title="PDF Preview"
-                        />
-                    ) : previewFile?.typeofFile === "txt" ? (
-                        <Box
-                            sx={{
-                                width: "100%",
-                                bgcolor: "#fafafa",
-                                p: 2,
-                                borderRadius: 2,
-                                fontFamily: "monospace",
-                                fontSize: "0.95rem",
-                                whiteSpace: "pre-wrap",
-                                lineHeight: 1.6,
-                                boxShadow: "inset 0 0 6px rgba(0,0,0,0.1)",
-                            }}
-                        >
-                            {/* You’d normally fetch file content here */}
-                            Sample text file preview...
-                        </Box>
-                    ) : previewFile?.typeofFile === "doc" ||
-                        previewFile?.typeofFile === "excel" ? (
-                        <Typography variant="body2" color="text.secondary" textAlign="center">
-                            Preview not supported for <b>{previewFile.typeofFile}</b>. <br />
-                            Please download the file instead.
-                        </Typography>
-                    ) : (
-                        <Typography variant="body2" color="text.secondary" textAlign="center">
-                            No preview available.
-                        </Typography>
-                    )}
-                </DialogContent>
-
-                {/* Footer */}
-                <DialogActions sx={{ px: 3, py: 2, bgcolor: "#fafafa" }}>
-                    <Button
-                        onClick={handleClosePreview}
-                        variant="contained"
-                        sx={{ borderRadius: 2, px: 3 }}
-                    >
-                        Close
-                    </Button>
-                </DialogActions>
-            </Dialog>
-
+        <div
+          className="row align-items-center"
+          style={{
+            border: "1px solid #c4c4c4",
+            borderRadius: "8px",
+            padding: "8px 12px",
+            background: "white",
+            margin: "0px",
+          }}
+        >
+          <div className="col-md-6">
+            <span style={{ fontSize: "14px", color: "#333" }}>8 items</span>
+          </div>
+          <div className="col-md-6 d-flex justify-content-end">
+            <Autocomplete
+              options={sortOptions}
+              value={sortBy}
+              onChange={(event, newValue) => setSortBy(newValue)}
+              getOptionLabel={(option) => option.label}
+              sx={{ width: 200 }}
+              renderInput={(params) => (
+                <TextField
+                  {...params}
+                  label="Sort By"
+                  size="small"
+                  style={{ backgroundColor: "transparent" }}
+                />
+              )}
+            />
+          </div>
         </div>
+
+        <div style={{ padding: "16px" }}>
+          <div>
+            <Typography variant="h6" sx={{ mt: 4, mb: 2 }}>
+              Folders
+            </Typography>
+            {!activeFolder ? (
+              <>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: "16px" }}>
+                  {folders.map((folder) =>
+                    folder.type != "file" ? (
+                      <FileFolderCard
+                        key={folder.id}
+                        type={"folder"}
+                        name={folder.name}
+                        onClick={() => openFolder(folder)}
+                        // Rename
+                        onRename={(newName) => {
+                          const updated = handleRenameFolder(
+                            folders,
+                            folder.id,
+                            newName
+                          );
+                          setFolders(updated);
+                        }}
+                        onDelete={() => {
+                          const updated = handleDeleteFolder(
+                            folders,
+                            folder.id
+                          );
+                          setFolders(updated);
+                        }}
+                        onDownload={() => {
+                          handleDownloadFolder(folder);
+                        }}
+                      />
+                    ) : (
+                      <FileFolderCard
+                        key={folder.id}
+                        type="file"
+                        name={folder.name}
+                        size={`${Math.round(folder.size / 1024)} KB`}
+                        date={new Date(folder.uploadedAt).toLocaleDateString()}
+                        typeofFile={folder.typeofFile}
+                        onRename={(newName) => {
+                          const updated = handleRenameFolder(
+                            folders,
+                            folder.id,
+                            newName
+                          );
+                          setFolders(updated);
+                        }}
+                        handleViewClick={() => handleViewClick(folder)}
+                        handleDownloadClick={() => handleDownloadClick(folder)}
+                        onDelete={() => {
+                          const updated = handleDeleteFolder(
+                            folders,
+                            folder.id
+                          );
+                          setFolders(updated);
+                        }}
+                      />
+                    )
+                  )}
+                </div>
+              </>
+            ) : (
+              <>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: "16px" }}>
+                  {/*  Show subfolders */}
+                  {activeFolder?.children?.map((folder) => (
+                    <FileFolderCard
+                      key={folder.id}
+                      type={"folder"}
+                      name={folder.name}
+                      onClick={() => {
+                        dispatch(setActiveFolder(folder));
+                        dispatch(addFolderToPath(folder));
+                      }}
+                      // Rename
+                      onRename={(newName) => {
+                        const updated = handleRenameFolder(
+                          folders,
+                          folder.id,
+                          newName
+                        );
+                        setFolders(updated);
+                      }}
+                      onDelete={() => {
+                        const updated = handleDeleteFolder(folders, folder.id);
+                        setFolders(updated);
+                      }}
+                      onDownload={() => {
+                        handleDownloadFolder(folder);
+                      }}
+                    />
+                  ))}
+
+                  {activeFolder.files.map((file) => (
+                    <FileFolderCard
+                      key={file.id}
+                      type="file"
+                      name={file.name}
+                      size={`${Math.round(file.size / 1024)} KB`}
+                      date={new Date(file.uploadedAt).toLocaleDateString()}
+                      typeofFile={file.typeofFile}
+                      onRename={(newName) => {
+                        const updated = handleRename(folders, file.id, newName);
+                        setFolders(updated);
+                        if (activeFolder) {
+                          const refreshed = findFolderById(
+                            updated,
+                            activeFolder.id
+                          );
+                          dispatch(setActiveFolder(refreshed || null));
+                        }
+                      }}
+                      handleViewClick={() => handleViewClick(file)}
+                      handleDownloadClick={() => handleDownloadClick(file)}
+                      onDelete={() => {
+                        const updated = handleDelete(folders, file.id);
+                        setFolders(updated);
+
+                        if (activeFolder) {
+                          const refreshed = findFolderById(
+                            updated,
+                            activeFolder.id
+                          );
+                          dispatch(setActiveFolder(refreshed || null));
+                        }
+                      }}
+                    />
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
+          {/* Files Section */}
+          <Typography variant="h6" sx={{ mt: 4, mb: 2 }}>
+            Files
+          </Typography>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: "16px" }}>
+            {filesInitial.map((file) => (
+              <FileFolderCard
+                key={file.id}
+                type="file"
+                name={file.name}
+                size={`${Math.round(file.size / 1024)} KB`}
+                date={new Date(file.uploadedAt).toLocaleDateString()}
+                typeofFile={file.typeofFile}
+                onRename={(newName) => {
+                  const updatedFiles = filesInitial.map((f) =>
+                    f.id === file.id ? { ...f, name: newName } : f
+                  );
+                  setFilesIntial(updatedFiles);
+                }}
+                onDelete={() => {
+                  const updatedFiles = filesInitial.filter(
+                    (f) => f.id !== file.id
+                  );
+                  setFilesIntial(updatedFiles);
+                }}
+                handleViewClick={() => handleViewClick(file)}
+                handleDownloadClick={() => handleDownloadClick(file)}
+              />
+            ))}
+          </div>
+        </div>
+
+        <Modal
+          show={showAddFolderModal}
+          onHide={() => dispatch(setShowAddFolderModal(false))}
+          centered
+          dialogClassName="custom-modal"
+        >
+          <Modal.Header
+            style={{ borderBottom: "none", padding: "1rem 1.5rem" }}
+          >
+            <Modal.Title style={{ fontWeight: "500", fontSize: "1.25rem" }}>
+              New Folder
+            </Modal.Title>
+          </Modal.Header>
+
+          <Modal.Body style={{ padding: "1rem 1.5rem" }}>
+            <input
+              type="text"
+              value={newFolderName}
+              onChange={(e) => setNewFolderName(e.target.value)}
+              placeholder="Folder name"
+              className="form-control"
+              style={{
+                borderRadius: "8px",
+                border: "1px solid #ccc",
+                padding: "0.5rem 0.75rem",
+                fontSize: "1rem",
+                outline: "none",
+              }}
+            />
+          </Modal.Body>
+
+          <Modal.Footer
+            style={{ borderTop: "none", padding: "0.75rem 1.5rem" }}
+          >
+            <Button
+              variant="light"
+              onClick={() => dispatch(setShowAddFolderModal(false))}
+              style={{
+                borderRadius: "8px",
+                border: "1px solid #ccc",
+                fontWeight: "500",
+                padding: "0.5rem 1rem",
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="primary"
+              onClick={handleSaveNewFolder}
+              style={{
+                borderRadius: "8px",
+                padding: "0.5rem 1rem",
+                fontWeight: "500",
+              }}
+            >
+              OK
+            </Button>
+          </Modal.Footer>
+        </Modal>
+
+        <Dialog
+          open={Boolean(previewFile)}
+          onClose={handleClosePreview}
+          maxWidth="md"
+          fullWidth
+          PaperProps={{
+            sx: { borderRadius: 3, overflow: "hidden" },
+          }}
+        >
+          {/* Header */}
+          <DialogTitle
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              bgcolor: "#f5f5f5",
+              px: 3,
+              py: 2,
+            }}
+          >
+            <Box display="flex" alignItems="center" gap={1}>
+              {previewFile?.typeofFile === "pdf" ? (
+                <PictureAsPdfIcon color="error" />
+              ) : previewFile?.typeofFile === "txt" ? (
+                <ArticleIcon color="primary" />
+              ) : (
+                <DescriptionIcon color="action" />
+              )}
+              <Typography variant="h6" noWrap>
+                {previewFile?.name}
+              </Typography>
+            </Box>
+            <IconButton onClick={handleClosePreview}>
+              <CloseIcon />
+            </IconButton>
+          </DialogTitle>
+
+          <Divider />
+
+          {/* Content */}
+          <DialogContent
+            dividers
+            sx={{
+              bgcolor: "background.default",
+              minHeight: "400px",
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+            }}
+          >
+            {previewFile?.typeofFile === "pdf" ? (
+              <iframe
+                src={previewFile.url}
+                style={{ width: "100%", height: "80vh", border: "none" }}
+                title="PDF Preview"
+              />
+            ) : previewFile?.typeofFile === "txt" ? (
+              <Box
+                sx={{
+                  width: "100%",
+                  bgcolor: "#fafafa",
+                  p: 2,
+                  borderRadius: 2,
+                  fontFamily: "monospace",
+                  fontSize: "0.95rem",
+                  whiteSpace: "pre-wrap",
+                  lineHeight: 1.6,
+                  boxShadow: "inset 0 0 6px rgba(0,0,0,0.1)",
+                }}
+              >
+                {/* You’d normally fetch file content here */}
+                Sample text file preview...
+              </Box>
+            ) : previewFile?.typeofFile === "doc" ||
+              previewFile?.typeofFile === "excel" ? (
+              <Typography
+                variant="body2"
+                color="text.secondary"
+                textAlign="center"
+              >
+                Preview not supported for <b>{previewFile.typeofFile}</b>.{" "}
+                <br />
+                Please download the file instead.
+              </Typography>
+            ) : (
+              <Typography
+                variant="body2"
+                color="text.secondary"
+                textAlign="center"
+              >
+                No preview available.
+              </Typography>
+            )}
+          </DialogContent>
+
+          {/* Footer */}
+          <DialogActions sx={{ px: 3, py: 2, bgcolor: "#fafafa" }}>
+            <Button
+              onClick={handleClosePreview}
+              variant="contained"
+              sx={{ borderRadius: 2, px: 3 }}
+            >
+              Close
+            </Button>
+          </DialogActions>
+        </Dialog>
+      </div>
     );
 };
 
