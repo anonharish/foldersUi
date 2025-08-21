@@ -96,7 +96,7 @@ const FileFolderCard = ({ type, name, onClick, date, size, typeofFile, onRename,
           textAlign: "center",
           cursor: "pointer",
           borderRadius: "12px",
-          backgroundColor: "#e2e8f0",
+          backgroundColor: "white",
           transition: "transform 0.2s, box-shadow 0.2s",
           "&:hover": {
             transform: "translateY(-3px)",
