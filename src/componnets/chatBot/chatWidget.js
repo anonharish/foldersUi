@@ -21,6 +21,7 @@ import { TypeAnimation } from "react-type-animation";
 import chatBot from "../../assets/chatbot.png";
 import FloatingChatIcon from "./FloatChatBot";
 import { sampleResponse } from "../incidents/sampleAiSearchResponse";
+import FileViewer from "./FileViewer";
 
 const dummyBotResponse = {
   answer: "Here is a dummy response with table and suggestions.",
@@ -30,9 +31,9 @@ const dummyBotResponse = {
     { Name: "Bob", Age: 30, Role: "Designer" },
   ],
   followupQuestions: [
-    "Show me more data",
-    "What is Alice’s role?",
-    "Give me charts",
+    "Show me more matching files",
+    "Tell me, which date the files are uploaded?",
+    "Give me Summary of ProjectPlan.pdf file",
   ],
   dashboard: [], // you can keep empty for now
 };
@@ -93,6 +94,46 @@ const renderTable = (tableData, tableTitle) => {
       </TableContainer>
     </Box>
   );
+};
+
+const getFileIcon = (fileExtension) => {
+  switch (fileExtension) {
+    case "pdf":
+      return "📄";
+    case "docx":
+    case "doc":
+      return "📝";
+    case "xlsx":
+    case "xls":
+      return "📊";
+    case "txt":
+      return "📋";
+    case "jpg":
+    case "jpeg":
+    case "png":
+    case "gif":
+      return "🖼️";
+    default:
+      return "📁";
+  }
+};
+
+// Define color based on file type
+const getFileColor = (fileExtension) => {
+  switch (fileExtension) {
+    case "pdf":
+      return "#e53935"; // Red for PDF
+    case "docx":
+    case "doc":
+      return "#1976d2"; // Blue for Word
+    case "xlsx":
+    case "xls":
+      return "#388e3c"; // Green for Excel
+    case "txt":
+      return "#757575"; // Gray for text
+    default:
+      return "#f57c00"; // Orange for others
+  }
 };
 
 const ChatWidget = () => {
@@ -221,7 +262,7 @@ const ChatWidget = () => {
               {/* Left side: Chat area */}
               <Box
                 sx={{
-                  flex: 1.5,
+                  flex: 2,
                   display: "flex",
                   flexDirection: "column",
                   bgcolor: "#f9fafb",
@@ -276,45 +317,124 @@ const ChatWidget = () => {
                             msg.isTypingComplete &&
                             msg.results && (
                               <Box sx={{ mt: 1 }}>
-                                {msg.results.map((doc, i) => (
-                                  <Paper
-                                    key={i}
-                                    sx={{
-                                      p: 1,
-                                      mb: 1,
-                                      border: "1px solid #ddd",
-                                      borderRadius: 1,
-                                    }}
-                                  >
-                                    <Typography
-                                      variant="body2"
-                                      fontWeight={600}
+                                {msg.results.map((doc, i) => {
+                                  // Get file extension
+                                  const fileExtension = doc.fileName
+                                    .split(".")
+                                    .pop()
+                                    .toLowerCase();
+                                  return (
+                                    <Paper
+                                      key={i}
+                                      sx={{
+                                        p: 1.5,
+                                        mb: 1.5,
+                                        border: "1px solid #e0e0e0",
+                                        borderRadius: 2,
+                                        boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
+                                        transition: "all 0.2s ease",
+                                        "&:hover": {
+                                          boxShadow:
+                                            "0 4px 12px rgba(0,0,0,0.12)",
+                                          transform: "translateY(-2px)",
+                                          borderColor: getFileColor(fileExtension),
+                                        },
+                                      }}
                                     >
-                                      {doc.fileName}
-                                    </Typography>
-                                    <Typography
-                                      variant="caption"
-                                      color="text.secondary"
-                                    >
-                                      {doc.content.slice(0, 100)}...
-                                    </Typography>
-                                    <Button
-                                      size="small"
-                                      sx={{ mt: 1 }}
-                                      onClick={() => setSelectedDoc(doc)}
-                                    >
-                                      View
-                                    </Button>
-                                  </Paper>
-                                ))}
+                                      <Box
+                                        sx={{
+                                          display: "flex",
+                                          alignItems: "flex-start",
+                                        }}
+                                      >
+                                        <Box
+                                          sx={{
+                                            fontSize: "24px",
+                                            mr: 2,
+                                            color: getFileColor(fileExtension),
+                                          }}
+                                        >
+                                          {getFileIcon(fileExtension)}
+                                        </Box>
+
+                                        <Box sx={{ flexGrow: 1 }}>
+                                          <Box
+                                            sx={{
+                                              display: "flex",
+                                              alignItems: "center",
+                                              mb: 0.5,
+                                            }}
+                                          >
+                                            <Typography
+                                              variant="body2"
+                                              fontWeight={600}
+                                              sx={{ mr: 1 }}
+                                            >
+                                              {doc.fileName}
+                                            </Typography>
+                                            <Box
+                                              sx={{
+                                                backgroundColor: `${getFileColor(fileExtension)}15`, // 15 = ~10% opacity
+                                                color: getFileColor(fileExtension),
+                                                fontSize: "10px",
+                                                fontWeight: "bold",
+                                                px: 1,
+                                                py: 0.5,
+                                                borderRadius: 1,
+                                                textTransform: "uppercase",
+                                              }}
+                                            >
+                                              {fileExtension}
+                                            </Box>
+                                          </Box>
+
+                                          <Typography
+                                            variant="caption"
+                                            color="text.secondary"
+                                            sx={{
+                                              lineHeight: 1.4,
+                                              display: "block",
+                                            }}
+                                          >
+                                            {doc.content.slice(0, 120)}...
+                                          </Typography>
+
+                                          <Button
+                                            variant="contained"
+                                            size="small"
+                                            sx={{
+                                              mt: 1.5,
+                                              backgroundColor: getFileColor(fileExtension),
+                                              "&:hover": {
+                                                backgroundColor: getFileColor(fileExtension),
+                                                opacity: 0.9,
+                                                boxShadow:
+                                                  "0 2px 4px rgba(0,0,0,0.2)",
+                                              },
+                                              fontSize: "12px",
+                                              fontWeight: "bold",
+                                              px: 2,
+                                              py: 0.5,
+                                              borderRadius: 1,
+                                              textTransform: "none",
+                                            }}
+                                            onClick={() => setSelectedDoc(doc)}
+                                          >
+                                            View Document
+                                          </Button>
+                                        </Box>
+                                      </Box>
+                                    </Paper>
+                                  );
+                                })}
                               </Box>
                             )}
 
                           {/* table */}
-                          {!msg.isUser &&
+                          {/* {!msg.isUser &&
                             msg.isTypingComplete &&
                             msg.tableData &&
-                            renderTable(msg.tableData, msg.tableTitle)}
+                            renderTable(msg.tableData, msg.tableTitle)} */}
                         </Box>
                       </Box>
                     ))}
@@ -390,20 +510,32 @@ const ChatWidget = () => {
               </Box>
 
               {/* Right side: Preview */}
-              <Box sx={{ flex: 1, borderLeft: "1px solid #ddd", p: 2 }}>
+              {/* Right side: File Preview */}
+              <Box
+                sx={{
+                  flex: 1,
+                  borderLeft: "1px solid #ddd",
+                  p: 2,
+                  height: "90vh",
+                  overflow: "auto",
+                }}
+              >
                 {selectedDoc ? (
-                  <>
-                    <Typography fontWeight={600}>
-                      {selectedDoc.fileName}
-                    </Typography>
-                    <Typography variant="body2" sx={{ mt: 1 }}>
-                      {selectedDoc.content}
-                    </Typography>
-                  </>
+                  <FileViewer document={selectedDoc} />
                 ) : (
-                  <Typography variant="caption" color="text.secondary">
-                    Select a document to preview
-                  </Typography>
+                  <Box
+                    sx={{
+                      height: "100%",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      color: "text.secondary",
+                    }}
+                  >
+                    <Typography variant="caption">
+                      Select a document to preview
+                    </Typography>
+                  </Box>
                 )}
               </Box>
             </Box>
