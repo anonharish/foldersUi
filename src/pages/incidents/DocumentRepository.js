@@ -13,9 +13,11 @@ import DescriptionIcon from "@mui/icons-material/Description";
 import ArticleIcon from "@mui/icons-material/Article";
 import { initialFolders } from './data';
 
+
 import { resetFolderPath, setFolderPath, addFolderToPath, setActiveFolder } from '../../Store/breadcrumbSlice';
 import JSZip from 'jszip';
 import { saveAs } from "file-saver";
+import { Close, Delete, Download, DriveFileMove, PersonAddAlt } from '@mui/icons-material';
 
 const DocumentRepository = () => {
     const files = [
@@ -33,7 +35,10 @@ const DocumentRepository = () => {
     const [fileNotFound, setFileNotFound] = useState(false);
     const [filesInitial, setFilesIntial] = useState(files);
     const folderPath = useSelector((root) => root.breadcrumb.folderPath);
-    const activeFolder = useSelector((root) => root.breadcrumb.activeFolder)
+    const activeFolder = useSelector((root) => root.breadcrumb.activeFolder);
+    const [selectedIds, setSelectedIds] = useState([]);
+const [lastSelectedIndex, setLastSelectedIndex] = useState(null);
+
 
     // Retrieve folders from localStorage if available
     //   const getInitialFolders = () => {
@@ -106,6 +111,26 @@ const DocumentRepository = () => {
       }, 1000);
     };
 
+    const handleItemClick = (event, item, index, list) => {
+  if (event.shiftKey && lastSelectedIndex !== null) {
+    // Select a range between last and current
+    const start = Math.min(lastSelectedIndex, index);
+    const end = Math.max(lastSelectedIndex, index);
+    const rangeIds = list.slice(start, end + 1).map(i => i.id);
+
+    setSelectedIds(prev => Array.from(new Set([...prev, ...rangeIds])));
+  } else {
+    // Single select
+    if (selectedIds.includes(item.id)) {
+      // Toggle off if already selected
+      setSelectedIds(prev => prev.filter(id => id !== item.id));
+    } else {
+      setSelectedIds([item.id]);
+    }
+    setLastSelectedIndex(index);
+  }
+};
+
 
     const handleRename = (folders, fileId, newName) => {
         return folders?.map(folder => ({
@@ -164,6 +189,10 @@ const DocumentRepository = () => {
                 file.name.toLowerCase().includes(searchTerm.toLowerCase())
             );
     };
+
+    const onClear = ()=>{
+setSelectedIds([])
+    }
 
     const openFolder = (folder) => {
         dispatch(setActiveFolder(folder));
@@ -293,9 +322,104 @@ const DocumentRepository = () => {
         }
     }, [folders, activeFolder, dispatch]);
 
+const sortDropDownOptions = [
+  { label: "Last modified" },
+  { label: "Last modified by me" },
+  { label: "Last opened by me" },
+  { label: "Name" },
+];
+
+
     return (
       <div className="p-4 ">
-        <Breadcrumbs aria-label="breadcrumb" sx={{ mb: 2 }} separator="›">
+
+        <input
+          style={{ display: "none" }}
+          ref={fileInputRef}
+          type="file"
+          multiple
+          hidden
+          onChange={handleFileUpload}
+          disabled={uploading} // prevent multiple clicks
+        />
+        {uploading && (
+          <div
+            className="position-fixed top-0 start-0 w-100 h-100 d-flex justify-content-center align-items-center bg-dark bg-opacity-50"
+            style={{ zIndex: 2000 }}
+          >
+            <div
+              className="spinner-border text-light"
+              role="status"
+              style={{ width: "3rem", height: "3rem" }}
+            >
+              <span className="visually-hidden">Uploading...</span>
+            </div>
+          </div>
+        )}
+        {fileNotFound && searchedFileName && (
+          <div className="alert alert-warning mb-4" role="alert">
+            The file "{searchedFileName}" was not found in the repository.
+          </div>
+        )}
+        {selectedIds.length >0 && 
+    <Box
+      sx={{
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+        backgroundColor: "#f8fafc", // same as Drive light blue
+        borderRadius: "24px",
+        px: 2,
+        py: 0.5,
+        boxShadow: "0 1px 2px rgba(0,0,0,0.1)",
+      }}
+    >
+      {/* Left Side */}
+      <Box display="flex" alignItems="center" gap={1}>
+        <IconButton size="small" onClick={onClear}>
+          <Close fontSize="small" />
+        </IconButton>
+        <Typography variant="body2" sx={{ fontWeight: 500 }}>
+          {selectedIds.length} selected
+        </Typography>
+
+      <Box display="flex" alignItems="center" gap={0.5}>
+        <IconButton size="small">
+          <Download fontSize="small" />
+        </IconButton>
+        <IconButton size="small">
+          <DriveFileMove fontSize="small" />
+        </IconButton>
+        <IconButton size="small">
+          <Delete fontSize="small" />
+        </IconButton>
+      </Box>
+      </Box>
+      <Box>
+        <Autocomplete
+          options={sortDropDownOptions}
+          value={sortBy}
+          onChange={(event, newValue) => setSortBy(newValue)}
+          getOptionLabel={(option) => option.label}
+          sx={{ width: 200 }}
+          renderInput={(params) => (
+            <TextField
+              {...params}
+              // label="Sort by"
+              size="small"
+              variant="outlined"
+              sx={{
+                backgroundColor: "white",
+                borderRadius: "8px",
+                "& .MuiOutlinedInput-root": { borderRadius: "8px" },
+              }}
+            />
+          )}
+        />
+      </Box>
+    </Box>
+}
+        <Breadcrumbs aria-label="breadcrumb"  separator="›" sx={{padding: "4px",color:'black'}}>
           <Link
             underline="hover"
             color="inherit"
@@ -326,102 +450,34 @@ const DocumentRepository = () => {
               );
             })}
         </Breadcrumbs>
-        <input
-          style={{ display: "none" }}
-          ref={fileInputRef}
-          type="file"
-          multiple
-          hidden
-          onChange={handleFileUpload}
-          disabled={uploading} // prevent multiple clicks
-        />
-        {uploading && (
-          <div
-            className="position-fixed top-0 start-0 w-100 h-100 d-flex justify-content-center align-items-center bg-dark bg-opacity-50"
-            style={{ zIndex: 2000 }}
-          >
-            <div
-              className="spinner-border text-light"
-              role="status"
-              style={{ width: "3rem", height: "3rem" }}
-            >
-              <span className="visually-hidden">Uploading...</span>
-            </div>
-          </div>
-        )}
-        {fileNotFound && searchedFileName && (
-          <div className="alert alert-warning mb-4" role="alert">
-            The file "{searchedFileName}" was not found in the repository.
-          </div>
-        )}
-
-        <div
-          className="row align-items-center"
-          style={{
-            border: "1px solid #c4c4c4",
-            borderRadius: "8px",
-            padding: "8px 12px",
-            background: "white",
-            margin: "0px",
-          }}
-        >
-          <div className="col-md-6">
-            <span style={{ fontSize: "14px", color: "#333" }}>8 items</span>
-          </div>
-          <div className="col-md-6 d-flex justify-content-end">
-            <Autocomplete
-              options={sortOptions}
-              value={sortBy}
-              onChange={(event, newValue) => setSortBy(newValue)}
-              getOptionLabel={(option) => option.label}
-              sx={{ width: 200 }}
-              renderInput={(params) => (
-                <TextField
-                  {...params}
-                  label="Sort By"
-                  size="small"
-                  style={{ backgroundColor: "transparent" }}
-                />
-              )}
-            />
-          </div>
-        </div>
-
-        <div style={{ padding: "16px" }}>
+        <div style={{ padding: "4px" }}>
           <div>
-            <Typography variant="h6" sx={{ mt: 4, mb: 2 }}>
+            <Typography variant="h6" sx={{ mb: 2 }}>
               Folders
             </Typography>
             {!activeFolder ? (
               <>
                 <div style={{ display: "flex", flexWrap: "wrap", gap: "16px" }}>
-                  {folders.map((folder) =>
+                  {folders.map((folder,index) =>
                     folder.type != "file" ? (
-                      <FileFolderCard
-                        key={folder.id}
-                        type={"folder"}
-                        name={folder.name}
-                        onClick={() => openFolder(folder)}
-                        // Rename
-                        onRename={(newName) => {
-                          const updated = handleRenameFolder(
-                            folders,
-                            folder.id,
-                            newName
-                          );
-                          setFolders(updated);
-                        }}
-                        onDelete={() => {
-                          const updated = handleDeleteFolder(
-                            folders,
-                            folder.id
-                          );
-                          setFolders(updated);
-                        }}
-                        onDownload={() => {
-                          handleDownloadFolder(folder);
-                        }}
-                      />
+                   <FileFolderCard
+  key={folder.id}
+  type={"folder"}
+  isSelected={selectedIds.includes(folder.id)}
+  name={folder.name}
+  onClick={(e) => handleItemClick(e, folder, index, filesInitial)} // single click = select
+  onDoubleClick={() => openFolder(folder)}                         // double click = open
+  onRename={(newName) => {
+    const updated = handleRenameFolder(folders, folder.id, newName);
+    setFolders(updated);
+  }}
+  onDelete={() => {
+    const updated = handleDeleteFolder(folders, folder.id);
+    setFolders(updated);
+  }}
+  onDownload={() => handleDownloadFolder(folder)}
+/>
+
                     ) : (
                       <FileFolderCard
                         key={folder.id}
@@ -438,6 +494,8 @@ const DocumentRepository = () => {
                           );
                           setFolders(updated);
                         }}
+                         isSelected={selectedIds.includes(folder.id)}   // NEW
+    onClick={(e) => handleItemClick(e, folder, index, filesInitial)}
                         handleViewClick={() => handleViewClick(folder)}
                         handleDownloadClick={() => handleDownloadClick(folder)}
                         onDelete={() => {
@@ -484,10 +542,12 @@ const DocumentRepository = () => {
                     />
                   ))}
 
-                  {activeFolder.files.map((file) => (
+                  {activeFolder.files.map((file,index) => (
                     <FileFolderCard
                       key={file.id}
                       type="file"
+                       isSelected={selectedIds.includes(file.id)}   // NEW
+    onClick={(e) => handleItemClick(e, file, index, filesInitial)}
                       name={file.name}
                       size={`${Math.round(file.size / 1024)} KB`}
                       date={new Date(file.uploadedAt).toLocaleDateString()}
@@ -528,10 +588,12 @@ const DocumentRepository = () => {
             Files
           </Typography>
           <div style={{ display: "flex", flexWrap: "wrap", gap: "16px" }}>
-            {filesInitial.map((file) => (
+            {filesInitial.map((file,index) => (
               <FileFolderCard
                 key={file.id}
                 type="file"
+                 isSelected={selectedIds.includes(file.id)}   // NEW
+    onClick={(e) => handleItemClick(e, file, index, filesInitial)}
                 name={file.name}
                 size={`${Math.round(file.size / 1024)} KB`}
                 date={new Date(file.uploadedAt).toLocaleDateString()}

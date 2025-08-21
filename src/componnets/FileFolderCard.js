@@ -12,7 +12,8 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
-  TextField
+  TextField,
+  Tooltip,
 } from "@mui/material";
 import MoreVertIcon from "@mui/icons-material/MoreVert";
 import DriveFileRenameOutlineIcon from "@mui/icons-material/DriveFileRenameOutline";
@@ -21,7 +22,7 @@ import FileDownloadOutlinedIcon from "@mui/icons-material/FileDownloadOutlined";
 import ShareOutlinedIcon from "@mui/icons-material/ShareOutlined";
 import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 import VisibilityIcon from "@mui/icons-material/Visibility";
-import { Star } from "@mui/icons-material";
+import { Star, StarBorder } from "@mui/icons-material";
 
 import FolderIcon from "@mui/icons-material/Folder";
 import PictureAsPdfIcon from "@mui/icons-material/PictureAsPdf";
@@ -29,13 +30,28 @@ import DescriptionIcon from "@mui/icons-material/Description";
 import TableChartIcon from "@mui/icons-material/TableChart";
 import InsertDriveFileIcon from "@mui/icons-material/InsertDriveFile";
 
-const FileFolderCard = ({ type, name, onClick, date, size, typeofFile, onRename, onDelete, handleViewClick, handleDownloadClick, onDownload, handleStarredClick }) => {
+const FileFolderCard = ({
+  type,
+  name,
+  onClick,
+  date,
+  size,
+  typeofFile,
+  onRename,
+  onDelete,
+  handleViewClick,
+  handleDownloadClick,
+  onDownload,
+  onDoubleClick,
+  isSelected
+}) => {
   const [anchorEl, setAnchorEl] = useState(null);
   const [hovered, setHovered] = useState(false);
   const [renameDialogOpen, setRenameDialogOpen] = useState(false);
   const [newName, setNewName] = useState(name);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
+  const [isStarred, setIsStarred] = useState(false);
 
   const open = Boolean(anchorEl);
 
@@ -44,6 +60,10 @@ const FileFolderCard = ({ type, name, onClick, date, size, typeofFile, onRename,
 
   const isFolder = type === "folder";
 
+  const handleStarToggle = (e) => {
+    e.stopPropagation();
+    setIsStarred((prev) => !prev);
+  };
 
   const handleRenameClick = () => {
     setRenameDialogOpen(true);
@@ -65,7 +85,6 @@ const FileFolderCard = ({ type, name, onClick, date, size, typeofFile, onRename,
     setDeleteDialogOpen(false);
   };
 
-
   // Determine icon based on file type
   const renderFileIcon = () => {
     if (isFolder) return <FolderIcon sx={{ fontSize: 28, color: "#06379e" }} />;
@@ -85,45 +104,59 @@ const FileFolderCard = ({ type, name, onClick, date, size, typeofFile, onRename,
     }
   };
 
+  const MAX_LENGTH = 15; 
+
   return (
     <>
-      <Card
-        onClick={onClick}
-        onMouseEnter={() => setHovered(true)}
-        onMouseLeave={() => setHovered(false)}
-        sx={{
-          width: isFolder ? 180 : 250,
-          textAlign: "center",
-          cursor: "pointer",
-          borderRadius: "12px",
-          backgroundColor: "white",
-          transition: "transform 0.2s, box-shadow 0.2s",
-          "&:hover": {
-            transform: "translateY(-3px)",
-            boxShadow: "0 8px 20px rgba(0,0,0,0.12)"
-          }
-        }}
-      >
+<Card
+  onClick={onClick}
+  onDoubleClick={isFolder ? onDoubleClick : undefined}
+  onMouseEnter={() => setHovered(true)}
+  onMouseLeave={() => setHovered(false)}
+  sx={{
+    width: isFolder ? 180 : 250,
+    cursor: "pointer",
+    borderRadius: "12px",
+    backgroundColor: isSelected ? "#e3f2fd" : "white",
+    border: isSelected ? "2px solid #1976d2" : "1px solid #ddd",
+    transition: "all 0.2s",
+  }}
+>
+
         <CardContent sx={{ p: 2 }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: "8px", flex: 1 }}>
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+            }}
+          >
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "8px",
+                flex: 1,
+              }}
+            >
               {renderFileIcon()}
-              <span
-                style={{
-                  fontSize: "14px",
-                  fontWeight: 500,
-                  whiteSpace: "nowrap",
-                  overflow: "hidden",
-                  textOverflow: "ellipsis",
-                  flex: 1
-                }}
-              >
-                {name}
-              </span>
+<Tooltip title={name}>
+  <span
+    style={{
+      fontSize: "14px",
+      fontWeight: 500,
+      whiteSpace: "nowrap",
+      overflow: "hidden",
+      textOverflow: "ellipsis",
+      flex: 1,
+      cursor: "default",
+    }}
+  >
+    {name.length > MAX_LENGTH ? name.slice(0, MAX_LENGTH) + "..." : name}
+  </span>
+</Tooltip>
             </div>
 
-            {/* Menu only for folders */}
-            {/* {isFolder && ( */}
             <IconButton
               size="small"
               onClick={(e) => {
@@ -133,21 +166,44 @@ const FileFolderCard = ({ type, name, onClick, date, size, typeofFile, onRename,
             >
               <MoreVertIcon fontSize="small" />
             </IconButton>
-            {/* )} */}
           </div>
 
           {/* File actions: show only on hover */}
           {!isFolder && hovered && (
-            <div style={{ display: "flex", justifyContent: "space-around", marginTop: "12px" }}>
-              <Button size="small" startIcon={<Star />} sx={{ color: "yellow", fontSize: "10px" }} onClick={handleStarredClick} />
-              {/* <Button size="small" startIcon={<VisibilityIcon />} sx={{ color: "blue", fontSize: "10px" }} onClick={handleViewClick} /> */}
-              <Button size="small" startIcon={<FileDownloadOutlinedIcon />} sx={{ fontSize: "10px" }} onClick={handleDownloadClick} />
-              {/* <Button size="small" startIcon={<DriveFileRenameOutlineIcon />} sx={{ fontSize: "10px" }} onClick={handleRenameClick} /> */}
-              <Button size="small" startIcon={<DeleteOutlineIcon />} sx={{ color: "red", fontSize: "10px" }} onClick={handleDeleteClick} />
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-around",
+                marginTop: "12px",
+              }}
+            >
+              <Button
+                size="small"
+                startIcon={
+                  isStarred ? (
+                    <Star sx={{ color: "gold" }} />
+                  ) : (
+                    <StarBorder sx={{ color: "gold" }} />
+                  )
+                }
+                sx={{ fontSize: "10px" }}
+                onClick={handleStarToggle}
+              />
+              <Button
+                size="small"
+                startIcon={<FileDownloadOutlinedIcon />}
+                sx={{ fontSize: "10px" }}
+                onClick={handleDownloadClick}
+              />
+              <Button
+                size="small"
+                startIcon={<DeleteOutlineIcon />}
+                sx={{ color: "red", fontSize: "10px" }}
+                onClick={() => setDeleteDialogOpen(true)}
+              />
             </div>
           )}
 
-          {/* Folder menu */}
           {/* Folder menu */}
           <Menu
             anchorEl={anchorEl}
@@ -157,12 +213,12 @@ const FileFolderCard = ({ type, name, onClick, date, size, typeofFile, onRename,
               sx: {
                 borderRadius: "10px",
                 minWidth: 180,
-                boxShadow: "0px 6px 18px rgba(0,0,0,0.12)"
-              }
+                boxShadow: "0px 6px 18px rgba(0,0,0,0.12)",
+              },
             }}
           >
             {/* View */}
-              <MenuItem
+            <MenuItem
               onClick={(e) => {
                 e.stopPropagation();
                 handleMenuClose();
@@ -170,7 +226,7 @@ const FileFolderCard = ({ type, name, onClick, date, size, typeofFile, onRename,
               }}
             >
               <ListItemIcon>
-                <VisibilityIcon fontSize="small" sx={{color:"blue"}}/>
+                <VisibilityIcon fontSize="small" sx={{ color: "blue" }} />
               </ListItemIcon>
               <ListItemText primary="View" />
             </MenuItem>
@@ -205,12 +261,15 @@ const FileFolderCard = ({ type, name, onClick, date, size, typeofFile, onRename,
             <MenuItem
               onClick={(e) => {
                 e.stopPropagation();
-                handleStarredClick();
-                handleMenuClose();
+                handleStarToggle(e);
               }}
             >
               <ListItemIcon>
-                <Star fontSize="small" sx={{color:"yellow"}}/>
+                {isStarred ? (
+                  <Star sx={{ color: "gold" }} />
+                ) : (
+                  <StarBorder sx={{ color: "gold" }} />
+                )}{" "}
               </ListItemIcon>
               <ListItemText primary="Starred" />
             </MenuItem>
@@ -230,12 +289,14 @@ const FileFolderCard = ({ type, name, onClick, date, size, typeofFile, onRename,
               <ListItemText primary="Move to trash" />
             </MenuItem>
           </Menu>
-
         </CardContent>
       </Card>
 
       {/* Rename Dialog */}
-      <Dialog open={renameDialogOpen} onClose={() => setRenameDialogOpen(false)}>
+      <Dialog
+        open={renameDialogOpen}
+        onClose={() => setRenameDialogOpen(false)}
+      >
         <DialogTitle>Rename {isFolder ? "Folder" : "File"}</DialogTitle>
         <DialogContent>
           <TextField
@@ -251,23 +312,29 @@ const FileFolderCard = ({ type, name, onClick, date, size, typeofFile, onRename,
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setRenameDialogOpen(false)}>Cancel</Button>
-          <Button onClick={handleRenameSave} variant="contained">Save</Button>
+          <Button onClick={handleRenameSave} variant="contained">
+            Save
+          </Button>
         </DialogActions>
       </Dialog>
       {/* Delete Confirmation Dialog */}
-      <Dialog open={deleteDialogOpen} onClose={() => setDeleteDialogOpen(false)}>
+      <Dialog
+        open={deleteDialogOpen}
+        onClose={() => setDeleteDialogOpen(false)}
+      >
         <DialogTitle>Confirm Delete</DialogTitle>
-        <DialogContent>
-          Are you sure you want to delete "{name}"?
-        </DialogContent>
+        <DialogContent>Are you sure you want to delete "{name}"?</DialogContent>
         <DialogActions>
           <Button onClick={() => setDeleteDialogOpen(false)}>Cancel</Button>
-          <Button onClick={handleDeleteConfirm} variant="contained" color="error">
+          <Button
+            onClick={handleDeleteConfirm}
+            variant="contained"
+            color="error"
+          >
             Delete
           </Button>
         </DialogActions>
       </Dialog>
-
     </>
   );
 };
