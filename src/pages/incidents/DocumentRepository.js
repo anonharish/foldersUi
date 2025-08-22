@@ -1,8 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useLocation } from "react-router-dom";
-import { Modal } from "react-bootstrap";
 import {
-  Button,
   Autocomplete,
   TextField,
   Typography,
@@ -21,7 +19,7 @@ import {
   findFolderById,
 } from "../../utils/helpers";
 import { useGlobalState } from "../../contexts/GlobalStateContext";
-import { initialFolders } from "./data";
+import { initialFolders } from "../data";
 import {
   resetFolderPath,
   setFolderPath,
@@ -30,12 +28,7 @@ import {
 } from "../../Store/breadcrumbSlice";
 import JSZip from "jszip";
 import { saveAs } from "file-saver";
-import {
-  Close,
-  Delete,
-  Download,
-  DriveFileMove,
-} from "@mui/icons-material";
+import { Close, Delete, Download, DriveFileMove } from "@mui/icons-material";
 import MoveDialog from "../DocumentsFunctions/MoveFunction";
 import DownloadDialog from "../DocumentsFunctions/DownloadFunction";
 import DeleteDialog from "../DocumentsFunctions/DeleteFunction";
@@ -43,15 +36,6 @@ import PreviewDialog from "../DocumentsFunctions/PreviewDialog";
 import CustomModal from "../DocumentsFunctions/CustomModal";
 
 const DocumentRepository = () => {
- const files = [
-  {
-    id: 9,
-    type: "file",
-    name: "SystemArchitecture.pdf",
-    typeofFile: "pdf",
-    url: "/files/invoice.pdf", 
-  },
-];
   const sortDropDownOptions = [
     { label: "Last modified" },
     { label: "Last modified by me" },
@@ -65,7 +49,7 @@ const DocumentRepository = () => {
   const { showAddFolderModal } = useSelector((state) => state.upload);
   const searchedFileName = location.state?.searchedFileName;
   const [fileNotFound, setFileNotFound] = useState(false);
-  const [filesInitial, setFilesIntial] = useState(files);
+  const [filesInitial, setFilesIntial] = useState(initialFolders.files);
   const folderPath = useSelector((root) => root.breadcrumb.folderPath);
   const activeFolder = useSelector((root) => root.breadcrumb.activeFolder);
   const [selectedIds, setSelectedIds] = useState([]);
@@ -73,7 +57,6 @@ const DocumentRepository = () => {
   const [folderSelections, setFolderSelections] = useState({});
   const [folders, setFolders] = useState(initialFolders);
   const [selectedFolder, setSelectedFolder] = useState(folders[0]);
-  const [searchTerm, setSearchTerm] = useState("");
   const [newFolderName, setNewFolderName] = useState("");
   const [uploading, setUploading] = useState(false);
   const [previewFile, setPreviewFile] = useState(null);
@@ -81,11 +64,14 @@ const DocumentRepository = () => {
   const [showDownloadDialog, setShowDownloadDialog] = useState(false);
   const [showMoveDialog, setShowMoveDialog] = useState(false);
   const [sortBy, setSortBy] = useState(sortDropDownOptions[0]);
-
+  const ensureArray = (x) => (Array.isArray(x) ? x : []);
   const allItems = activeFolder
-    ? [...(activeFolder.children || []), ...(activeFolder.files || [])]
-    : [...folders, ...filesInitial];
-  
+    ? [
+        ...ensureArray(activeFolder.children),
+        ...ensureArray(activeFolder.files),
+      ]
+    : [...ensureArray(folders.folders), ...ensureArray(filesInitial)];
+
   useEffect(() => {
     localStorage.setItem("folders", JSON.stringify(folders));
   }, [folders]);
@@ -125,6 +111,7 @@ const DocumentRepository = () => {
   useEffect(() => {
     if (activeFolder) {
       const findUpdatedFolder = (foldersArray, folderId) => {
+        if (!Array.isArray(foldersArray)) return null;
         for (const folder of foldersArray) {
           if (folder.id === folderId) return folder;
           if (folder.children && folder.children.length > 0) {
@@ -135,59 +122,110 @@ const DocumentRepository = () => {
         return null;
       };
 
-      const updatedFolder = findUpdatedFolder(folders, activeFolder.id);
+      const updatedFolder = findUpdatedFolder(folders.folders, activeFolder.id);
       if (updatedFolder && updatedFolder !== activeFolder) {
         dispatch(setActiveFolder(updatedFolder));
       }
     }
   }, [folders, activeFolder, dispatch]);
 
-  const flattenItems = (folders) => {
+  const flattenItems = (data) => {
     let result = [];
-    folders.forEach((folder) => {
-      result.push(...folder.files); 
-      if (folder.children?.length) {
-        result.push(...flattenItems(folder.children)); 
-      }
-    });
+
+    // include root-level files
+    if (Array.isArray(data.files)) {
+      result.push(...data.files);
+    }
+
+    // walk through each folder
+    if (Array.isArray(data.folders)) {
+      data.folders.forEach((folder) => {
+        if (Array.isArray(folder.files)) {
+          result.push(...folder.files);
+        }
+
+        if (Array.isArray(folder.children) && folder.children.length > 0) {
+          result.push(...flattenItems({ folders: folder.children, files: [] }));
+        }
+      });
+    }
+
     return result;
   };
 
-const handleMoveClick = () => {
-  const allFiles = [
-    ...filesInitial,          
-    ...flattenItems(folders)  
-  ];
+  const handleMoveClick = () => {
+    const allFiles = [
+      ...filesInitial,
+      ...flattenItems(folders), // <-- pass the whole object, not folders.folders
+    ];
 
-  const hasFileSelected = selectedIds.some((id) =>
-    allFiles.find((file) => file.id === id)
-  );
+    const hasFileSelected = selectedIds.some((id) =>
+      allFiles.find((file) => file.id === id)
+    );
 
-  if (hasFileSelected) {
-    setShowMoveDialog(true);
-  }
-};
+    if (hasFileSelected) {
+      setShowMoveDialog(true);
+    }
+  };
+
+  const removeFileInFolders = (foldersArr = [], fileId) => {
+    for (const folder of foldersArr) {
+      if (Array.isArray(folder.files)) {
+        const idx = folder.files.findIndex((f) => f.id === fileId);
+        if (idx > -1) {
+          const [file] = folder.files.splice(idx, 1);
+          return file;
+        }
+      }
+      if (Array.isArray(folder.children) && folder.children.length) {
+        const file = removeFileInFolders(folder.children, fileId);
+        if (file) return file;
+      }
+    }
+    return null;
+  };
+
+  const addFileToFolderById = (foldersArr = [], folderId, file) => {
+    for (const folder of foldersArr) {
+      if (folder.id === folderId) {
+        if (!Array.isArray(folder.files)) folder.files = [];
+        folder.files.push(file);
+        return true;
+      }
+      if (Array.isArray(folder.children) && folder.children.length) {
+        if (addFileToFolderById(folder.children, folderId, file)) return true;
+      }
+    }
+    return false;
+  };
 
   const handleConfirmMove = (targetFolder) => {
-    let updatedFolders = folders;
+    setFolders((prev) => {
+      const repo = JSON.parse(JSON.stringify(prev)); // deep clone { folders, files }
+      const rootFiles = Array.isArray(filesInitial) ? [...filesInitial] : [];
 
-    selectedIds.forEach((id) => {
-      let file = filesInitial.find((f) => f.id === id);
-      if (!file && activeFolder) {
-        file = activeFolder.files.find((f) => f.id === id);
-      }
-      if (file) {
-        updatedFolders = handleDelete(updatedFolders, file.id);
-        updatedFolders = updateFolderWithFiles(
-          updatedFolders,
-          targetFolder.id,
-          [file]
-        );
-      }
+      selectedIds.forEach((id) => {
+        let moved = null;
+
+        // 1) try root-level files (filesInitial)
+        const rootIdx = rootFiles.findIndex((f) => f.id === id);
+        if (rootIdx > -1) {
+          moved = rootFiles.splice(rootIdx, 1)[0];
+        } else {
+          // 2) try inside nested folders
+          moved = removeFileInFolders(repo.folders, id);
+        }
+
+        // 3) drop into target folder
+        if (moved) addFileToFolderById(repo.folders, targetFolder.id, moved);
+      });
+
+      // sync root files state
+      setFilesIntial(rootFiles);
+
+      return repo;
     });
 
-    setFolders(updatedFolders);
-    setFilesIntial(filesInitial.filter((f) => !selectedIds.includes(f.id)));
     setSelectedIds([]);
     setShowMoveDialog(false);
   };
@@ -276,7 +314,7 @@ const handleMoveClick = () => {
       if (selectedIds.includes(item.id)) {
         updateSelection([]);
       } else {
-        updateSelection([item.id], index); 
+        updateSelection([item.id], index);
       }
     }
   };
@@ -295,16 +333,25 @@ const handleMoveClick = () => {
         addFolderToZip(childFolder, childZip);
       });
     };
-    const findFolderById = (folders, id) => {
-      for (const folder of folders) {
+    const findFolderById = (foldersData, id) => {
+      const list = Array.isArray(foldersData)
+        ? foldersData
+        : foldersData.folders;
+
+      if (!Array.isArray(list)) return null;
+
+      for (const folder of list) {
         if (folder.id === id) return folder;
-        if (folder.children && folder.children.length > 0) {
+
+        if (Array.isArray(folder.children) && folder.children.length > 0) {
           const found = findFolderById(folder.children, id);
           if (found) return found;
         }
       }
+
       return null;
     };
+
     selectedIds.forEach((id) => {
       const folder = findFolderById(folders, id);
       if (folder) {
@@ -320,11 +367,9 @@ const handleMoveClick = () => {
         }
       }
     });
-
     const blob = await zip.generateAsync({ type: "blob" });
     saveAs(blob, `Selected_Items.zip`);
-
-    setShowDownloadDialog(false); // close after download finishes
+    setShowDownloadDialog(false);
   };
 
   const handleDeleteSelected = () => {
@@ -332,28 +377,35 @@ const handleMoveClick = () => {
   };
 
   const handleConfirmDelete = () => {
-    let updatedFolders = folders;
+    let updatedRepo = folders; // object { folders: [], files: [] }
     let updatedFiles = filesInitial;
 
     selectedIds.forEach((id) => {
-      if (folders.some((f) => f.id === id)) {
-        updatedFolders = handleDeleteFolder(updatedFolders, id);
+      if (ensureArray(folders.folders).some((f) => f.id === id)) {
+        const newFolderList = handleDeleteFolder(
+          ensureArray(updatedRepo.folders),
+          id
+        ); // expects array
+        updatedRepo = { ...updatedRepo, folders: newFolderList };
       } else {
-        updatedFiles = updatedFiles.filter((f) => f.id !== id);
+        updatedFiles = ensureArray(updatedFiles).filter((f) => f.id !== id);
         if (activeFolder) {
-          updatedFolders = updateFolderWithFiles(
-            updatedFolders,
+          const newFiles = ensureArray(activeFolder.files).filter(
+            (f) => f.id !== id
+          );
+          updatedRepo = updateFolderWithFiles(
+            updatedRepo,
             activeFolder.id,
-            activeFolder.files.filter((f) => f.id !== id)
+            newFiles
           );
         }
       }
     });
 
-    setFolders(updatedFolders);
+    setFolders(updatedRepo);
     setFilesIntial(updatedFiles);
     setSelectedIds([]);
-    setShowDeleteDialog(false); 
+    setShowDeleteDialog(false);
   };
 
   useEffect(() => {
@@ -378,9 +430,7 @@ const handleMoveClick = () => {
         default:
           return;
       }
-
       if (e.shiftKey) {
-        // Shift + arrow: extend selection
         const start = Math.min(focusedIndex, newIndex);
         const end = Math.max(focusedIndex, newIndex);
         const rangeIds = allItems.slice(start, end + 1).map((i) => i.id);
@@ -389,13 +439,10 @@ const handleMoveClick = () => {
           newIndex
         );
       } else {
-        // Arrow without shift: select only the focused item
         updateSelection([allItems[newIndex].id], newIndex);
       }
-
       e.preventDefault();
     };
-
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [focusedIndex, allItems, selectedIds]);
@@ -410,17 +457,20 @@ const handleMoveClick = () => {
     }));
   };
 
-  const handleDelete = (folders, id) =>
-    folders
+  const handleDelete = (folders, id) => {
+    return (folders.folders || [])
       .map((folder) => {
-        if (folder.id === id) return null; 
+        if (folder.id === id) {
+          return null; // or remove it
+        }
         return {
           ...folder,
-          files: folder.files.filter((file) => file.id !== id),
-          children: handleDelete(folder.children || [], id),
+          children: handleDelete({ folders: folder.children || [] }, id)
+            .folders,
         };
       })
       .filter(Boolean);
+  };
 
   const handleSaveNewFolder = () => {
     if (!newFolderName.trim()) {
@@ -456,7 +506,7 @@ const handleMoveClick = () => {
   const openFolder = (folder) => {
     dispatch(setActiveFolder(folder));
     dispatch(addFolderToPath(folder));
-    setSelectedIds([]); 
+    setSelectedIds([]);
     setFocusedIndex(null);
   };
 
@@ -498,17 +548,15 @@ const handleMoveClick = () => {
     });
   };
 
-  const handleDeleteFolder = (folders, folderId) => {
-    return folders
+  const handleDeleteFolder = (foldersArray, folderId) => {
+    return ensureArray(foldersArray)
       .filter((folder) => folder.id !== folderId)
       .map((folder) => ({
         ...folder,
-        children: folder.children
-          ? handleDeleteFolder(folder.children, folderId)
-          : [],
+        files: ensureArray(folder.files).filter((f) => f.id !== folderId),
+        children: handleDeleteFolder(folder.children || [], folderId),
       }));
   };
-
   const handleDownloadFolder = async (folder) => {
     const zip = new JSZip();
 
@@ -538,7 +586,7 @@ const handleMoveClick = () => {
         multiple
         hidden
         onChange={handleFileUpload}
-        disabled={uploading} 
+        disabled={uploading} // prevent multiple clicks
       />
       {uploading && (
         <div
@@ -572,7 +620,6 @@ const handleMoveClick = () => {
             boxShadow: "0 1px 2px rgba(0,0,0,0.1)",
           }}
         >
-          {/* Left Side */}
           <Box display="flex" alignItems="center" gap={1}>
             <IconButton size="small" onClick={onClear}>
               <Close fontSize="small" />
@@ -580,6 +627,7 @@ const handleMoveClick = () => {
             <Typography variant="body2" sx={{ fontWeight: 500 }}>
               {selectedIds.length} selected
             </Typography>
+
             <Box display="flex" alignItems="center" gap={0.5}>
               <IconButton size="small" onClick={handleDownloadSelected}>
                 <Download fontSize="small" />
@@ -589,7 +637,7 @@ const handleMoveClick = () => {
                 onClick={handleMoveClick}
                 disabled={selectedIds.every((id) => {
                   const item = allItems.find((i) => i.id === id);
-                  return item?.isExpanded; 
+                  return item?.isExpanded;
                 })}
               >
                 <DriveFileMove fontSize="small" />
@@ -627,16 +675,20 @@ const handleMoveClick = () => {
         separator="›"
         sx={{ padding: "4px", color: "black" }}
       >
-        <Link
-          underline="hover"
-          color="inherit"
-          onClick={goHome}
-          sx={{ cursor: "pointer" }}
-        >
-          Home
-        </Link>
-
-        {/* Dynamic Folders Path */}
+        {activeFolder ? (
+          <Link
+            underline="hover"
+            color="inherit"
+            onClick={goHome}
+            sx={{ cursor: "pointer" }}
+          >
+            Home
+          </Link>
+        ) : (
+          <Typography variant="h6" fontWeight={600} sx={{ color: "blue" }}>
+            Home
+          </Typography>
+        )}
         {Array.isArray(folderPath) &&
           folderPath.map((folder, index) => {
             const isLast = index === folderPath.length - 1;
@@ -658,15 +710,15 @@ const handleMoveClick = () => {
           })}
       </Breadcrumbs>
       <div style={{ padding: "4px" }}>
-        <div>
-          <Typography variant="h6" sx={{ mb: 2 }}>
-            {!activeFolder ? "Folders" : "All Items"}
-          </Typography>
-          {!activeFolder ? (
-            <>
-              <div style={{ display: "flex", flexWrap: "wrap", gap: "16px" }}>
-                {folders.map((folder, index) =>
-                  folder.type != "file" ? (
+        {!activeFolder ? (
+          <>
+            <Typography sx={{ mb: 2, fontSize: "16px", fontWeight: "500" }}>
+              Folders
+            </Typography>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: "16px" }}>
+              {folders?.folders?.map(
+                (folder, index) =>
+                  folder.type != "file" && (
                     <FileFolderCard
                       key={folder.id}
                       type={"folder"}
@@ -678,140 +730,34 @@ const handleMoveClick = () => {
                       onDoubleClick={() => {
                         setSelectedIds([]);
                         openFolder(folder);
-                      }} 
+                      }}
                       onRename={(newName) => {
                         const updated = handleRenameFolder(
-                          folders,
+                          folders.folders,
                           folder.id,
                           newName
                         );
-                        setFolders(updated);
+                        setFolders({ ...folders, folders: updated });
                       }}
                       onDelete={() => {
-                        const updated = handleDeleteFolder(folders, folder.id);
-                        setFolders(updated);
+                        const updated = handleDeleteFolder(
+                          folders.folders,
+                          folder.id
+                        );
+                        setFolders({ ...folders, folders: updated });
                       }}
                       onDownload={() => handleDownloadFolder(folder)}
                     />
-                  ) : (
-                    <FileFolderCard
-                      key={folder.id}
-                      type="file"
-                      name={folder.name}
-                      size={`${Math.round(folder.size / 1024)} KB`}
-                      date={new Date(folder.uploadedAt).toLocaleDateString()}
-                      typeofFile={folder.typeofFile}
-                      onRename={(newName) => {
-                        const updated = handleRenameFolder(
-                          folders,
-                          folder.id,
-                          newName
-                        );
-                        setFolders(updated);
-                      }}
-                      isSelected={selectedIds.includes(folder.id)} 
-                      onClick={(e) =>
-                        handleItemClick(e, folder, index, filesInitial)
-                      }
-                      handleViewClick={() => handleViewClick(folder)}
-                      handleDownloadClick={() => handleDownloadClick(folder)}
-                      onDoubleClick={() => {
-                        setSelectedIds([]);
-                        handleViewClick(folder);
-                      }}
-                      onDelete={() => {
-                        const updated = handleDeleteFolder(folders, folder.id);
-                        setFolders(updated);
-                      }}
-                    />
                   )
-                )}
-              </div>
-            </>
-          ) : (
-            <>
-              <div style={{ display: "flex", flexWrap: "wrap", gap: "16px" }}>
-                {activeFolder?.children?.map((folder, index) => (
-                  <FileFolderCard
-                    key={folder.id}
-                    type="folder"
-                    name={folder.name}
-                    isSelected={selectedIds.includes(folder.id)}
-                    onClick={(e) => handleItemClick(e, folder, index)}
-                    onDoubleClick={() => {
-                      setSelectedIds([]); 
-                      openFolder(folder);
-                    }}
-                    onRename={(newName) => {
-                      const updated = handleRenameFolder(
-                        folders,
-                        folder.id,
-                        newName
-                      );
-                      setFolders(updated);
-                    }}
-                    onDelete={() => {
-                      const updated = handleDeleteFolder(folders, folder.id);
-                      setFolders(updated);
-                    }}
-                    onDownload={() => handleDownloadFolder(folder)}
-                  />
-                ))}
-
-                {activeFolder.files.map((file, index) => (
-                  <FileFolderCard
-                    key={file.id}
-                    type="file"
-                    isSelected={selectedIds.includes(file.id)} // NEW
-                    onClick={(e) =>
-                      handleItemClick(e, file, index, filesInitial)
-                    }
-                    name={file.name}
-                    size={`${Math.round(file.size / 1024)} KB`}
-                    date={new Date(file.uploadedAt).toLocaleDateString()}
-                    typeofFile={file.typeofFile}
-                    onRename={(newName) => {
-                      const updated = handleRename(folders, file.id, newName);
-                      setFolders(updated);
-                      if (activeFolder) {
-                        const refreshed = findFolderById(
-                          updated,
-                          activeFolder.id
-                        );
-                        dispatch(setActiveFolder(refreshed || null));
-                      }
-                    }}
-                    handleViewClick={() => handleViewClick(file)}
-                    handleDownloadClick={() => handleDownloadClick(file)}
-                    onDoubleClick={() => {
-                      setSelectedIds([]);
-                      handleViewClick(file);
-                    }}
-                    onDelete={() => {
-                      const updated = handleDelete(folders, file.id);
-                      setFolders(updated);
-
-                      if (activeFolder) {
-                        const refreshed = findFolderById(
-                          updated,
-                          activeFolder.id
-                        );
-                        dispatch(setActiveFolder(refreshed || null));
-                      }
-                    }}
-                  />
-                ))}
-              </div>
-            </>
-          )}
-        </div>
-        {!activeFolder && (
-          <>
-            <Typography variant="h6" sx={{ mt: 4, mb: 2 }}>
+              )}
+            </div>
+            <Typography
+              sx={{ mt: 4, mb: 2, fontSize: "16px", fontWeight: "500" }}
+            >
               Files
             </Typography>
             <div style={{ display: "flex", flexWrap: "wrap", gap: "16px" }}>
-              {filesInitial.map((file, index) => (
+              {filesInitial?.map((file, index) => (
                 <FileFolderCard
                   key={file.id}
                   type="file"
@@ -843,36 +789,138 @@ const handleMoveClick = () => {
               ))}
             </div>
           </>
+        ) : (
+          <>
+            {activeFolder?.children && activeFolder?.children.length > 0 && (
+              <Typography sx={{ mb: 2, fontSize: "16px", fontWeight: "500" }}>
+                All Items
+              </Typography>
+            )}
+            <div style={{ display: "flex", gap: "16px", flexWrap: "wrap" }}>
+              {activeFolder?.children?.map((folder, index) => (
+                <FileFolderCard
+                  key={folder.id}
+                  type="folder"
+                  name={folder.name}
+                  isSelected={selectedIds.includes(folder.id)}
+                  onClick={(e) => handleItemClick(e, folder, index)}
+                  onDoubleClick={() => {
+                    setSelectedIds([]);
+                    openFolder(folder);
+                  }}
+                  onRename={(newName) => {
+                    const updated = handleRenameFolder(
+                      folders.folders,
+                      folder.id,
+                      newName
+                    );
+                    setFolders({ ...folders, folders: updated });
+                  }}
+                  onDelete={() => {
+                    const updated = handleDeleteFolder(
+                      folders.folders,
+                      folder.id
+                    );
+                    setFolders({ ...folders, folders: updated });
+                  }}
+                  onDownload={() => handleDownloadFolder(folder)}
+                />
+              ))}
+              {activeFolder?.files?.map((file, index) => (
+                <FileFolderCard
+                  key={file.id}
+                  type="file"
+                  isSelected={selectedIds.includes(file.id)} // NEW
+                  onClick={(e) => handleItemClick(e, file, index, filesInitial)}
+                  name={file.name}
+                  size={`${Math.round(file.size / 1024)} KB`}
+                  date={new Date(file.uploadedAt).toLocaleDateString()}
+                  typeofFile={file.typeofFile}
+                  onRename={(newName) => {
+                    const updatedFolders = handleRename(
+                      folders?.folders,
+                      file.id,
+                      newName
+                    );
+                    const updatedFiles = (folders.files || []).map((f) =>
+                      f.id === file.id ? { ...f, name: newName } : f
+                    );
+                    const finalState = {
+                      ...folders,
+                      folders: updatedFolders,
+                      files: updatedFiles,
+                    };
+                    setFolders(finalState);
+
+                    if (activeFolder) {
+                      const refreshed = findFolderById(
+                        finalState.folders,
+                        activeFolder.id
+                      );
+                      dispatch(setActiveFolder(refreshed || null));
+                    }
+                  }}
+                  onDelete={() => {
+                    const updatedFolders = handleDelete(
+                      folders?.folders || [],
+                      file.id
+                    );
+                    const updatedFiles = (folders?.files || []).filter(
+                      (f) => f.id !== file.id
+                    );
+                    const finalState = {
+                      ...folders,
+                      folders: updatedFolders,
+                      files: updatedFiles,
+                    };
+                    setFolders(finalState);
+                    if (activeFolder) {
+                      const refreshed = findFolderById(
+                        finalState.folders,
+                        activeFolder.id
+                      );
+                      dispatch(setActiveFolder(refreshed || null));
+                    }
+                  }}
+                  handleDownloadClick={() => handleDownloadClick(file)}
+                  onDoubleClick={() => {
+                    setSelectedIds([]);
+                    handleViewClick(file);
+                  }}
+                />
+              ))}
+            </div>
+          </>
         )}
       </div>
- <CustomModal
-  show={showAddFolderModal}
-  onClose={() => dispatch(setShowAddFolderModal(false))}
-  onConfirm={handleSaveNewFolder}
-  title="New Folder"
-  bodyContent={
-    <input
-      type="text"
-      value={newFolderName}
-      onChange={(e) => setNewFolderName(e.target.value)}
-      placeholder="Folder name"
-      className="form-control"
-      style={{
-        borderRadius: "12px",
-        border: "1px solid #ccc",
-        padding: "0.5rem 0.75rem",
-        fontSize: "1rem",
-        outline: "none",
-        backgroundColor: "#f8fafc",
-      }}
-    />
-  }
-/>     
- <PreviewDialog
-      open={Boolean(previewFile)}
-      onClose={handleClosePreview}
-      file={previewFile}
-    />
+      <CustomModal
+        show={showAddFolderModal}
+        onClose={() => dispatch(setShowAddFolderModal(false))}
+        onConfirm={handleSaveNewFolder}
+        title="New Folder"
+        bodyContent={
+          <input
+            type="text"
+            value={newFolderName}
+            onChange={(e) => setNewFolderName(e.target.value)}
+            placeholder="Folder name"
+            className="form-control"
+            style={{
+              borderRadius: "12px",
+              border: "1px solid #ccc",
+              padding: "0.5rem 0.75rem",
+              fontSize: "1rem",
+              outline: "none",
+              backgroundColor: "#f8fafc",
+            }}
+          />
+        }
+      />
+      <PreviewDialog
+        open={Boolean(previewFile)}
+        onClose={handleClosePreview}
+        file={previewFile}
+      />
       <DeleteDialog
         open={showDeleteDialog}
         onClose={() => setShowDeleteDialog(false)}
@@ -887,7 +935,7 @@ const handleMoveClick = () => {
         open={showMoveDialog}
         onClose={() => setShowMoveDialog(false)}
         onConfirm={handleConfirmMove}
-        folders={folders}
+        folders={Array.isArray(folders.folders) ? folders.folders : []}
       />
     </div>
   );

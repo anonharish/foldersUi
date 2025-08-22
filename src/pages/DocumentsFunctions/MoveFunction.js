@@ -51,8 +51,8 @@ const Transition = React.forwardRef(function Transition(props, ref) {
             Select a target folder where you want to move the files:
           </Typography>
           <Autocomplete
-            options={folders}
-            getOptionLabel={(option) => option.name}
+             options={Array.isArray(folders) ? folders : []}
+  getOptionLabel={(option) => option.name || ""}
             onChange={(e, newValue) => setSelectedTarget(newValue)}
             renderInput={(params) => (
               <TextField

@@ -69,7 +69,7 @@ export const updateFolderWithFiles = (folders, targetFolderId, newFiles) => {
             return {
                 ...folder,
                 files: [
-                    ...folder.files,
+                    ...(folder.files || []),
                     ...newFiles.map(file => ({
                         id: Date.now() + Math.random(),
                         name: file.name,

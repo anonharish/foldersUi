@@ -220,6 +220,7 @@ const FileFolderCard = ({
             }}
           >
             {/* View */}
+            {!isFolder &&
               <MenuItem
               onClick={(e) => {
                 e.stopPropagation();
@@ -232,6 +233,7 @@ const FileFolderCard = ({
               </ListItemIcon>
               <ListItemText primary="View" />
             </MenuItem>
+  }
             {/* Download */}
             <MenuItem
               onClick={(e) => {
