@@ -16,7 +16,14 @@ import {
   TableRow,
   Chip
 } from "@mui/material";
-import { Close, Send, SmartToy } from "@mui/icons-material";
+import { Close, Send, SmartToy ,  Description, // PDF
+  Article, // Word documents
+  TableChart, // Excel
+  Subject, // Text files
+  Image, // Images
+  Folder,
+  SupportAgent
+ } from "@mui/icons-material";
 import { motion } from "framer-motion";
 import { TypeAnimation } from "react-type-animation";
 import chatBot from "../../assets/chatbot.png";
@@ -100,22 +107,22 @@ const renderTable = (tableData, tableTitle) => {
 const getFileIcon = (fileExtension) => {
   switch (fileExtension) {
     case "pdf":
-      return "📄";
+      return <Description sx={{ fontSize: 24 }} />;
     case "docx":
     case "doc":
-      return "📝";
+      return <Article sx={{ fontSize: 24 }} />;
     case "xlsx":
     case "xls":
-      return "📊";
+      return <TableChart sx={{ fontSize: 24 }} />;
     case "txt":
-      return "📋";
+      return <Subject sx={{ fontSize: 24 }} />;
     case "jpg":
     case "jpeg":
     case "png":
     case "gif":
-      return "🖼️";
+      return <Image sx={{ fontSize: 24 }} />;
     default:
-      return "📁";
+      return <Folder sx={{ fontSize: 24 }} />;
   }
 };
 
@@ -168,14 +175,16 @@ const ChatWidget = () => {
     ]);
     setInputValue("");
     setIsTyping(false);
+    setSelectedDoc(null);
   };
 
-  const handleSendMessage = () => {
-    if (!inputValue.trim()) return;
+  const handleSendMessage = (text = null) => {
+    const messageText = text || inputValue.trim();
+    if (!messageText) return;
 
     const userMsg = {
       id: Date.now().toString(),
-      text: inputValue,
+      text: messageText,
       isUser: true,
       isTypingComplete: true,
     };
@@ -206,7 +215,7 @@ const ChatWidget = () => {
   const handleSuggestionClick = (text) => {
     if (!text || isTyping) return;
     setInputValue(text);
-    handleSendMessage();
+    handleSendMessage(text);
   };
 
   return (
@@ -246,7 +255,7 @@ const ChatWidget = () => {
               }}
             >
               <Avatar sx={{ bgcolor: "#ea641f", width: 40, height: 40 }}>
-                <SmartToy />
+                <SupportAgent />
               </Avatar>
               <Typography variant="subtitle1" fontWeight={600} ml={2}>
                 AI Document Search
@@ -407,12 +416,11 @@ const ChatWidget = () => {
                                             size="small"
                                             sx={{
                                               mt: 1.5,
-                                              backgroundColor: getFileColor(fileExtension),
+                                              backgroundColor: "#3b54b0", // Use your primary color instead of file-specific color
                                               "&:hover": {
-                                                backgroundColor: getFileColor(fileExtension),
+                                                backgroundColor: "#2a3c82", // Darker shade for hover
                                                 opacity: 0.9,
-                                                boxShadow:
-                                                  "0 2px 4px rgba(0,0,0,0.2)",
+                                                boxShadow: "0 2px 4px rgba(0,0,0,0.2)",
                                               },
                                               fontSize: "12px",
                                               fontWeight: "bold",
@@ -542,19 +550,80 @@ const ChatWidget = () => {
                 {selectedDoc ? (
                   <FileViewer document={selectedDoc} />
                 ) : (
-                  <Box
-                    sx={{
-                      height: "100%",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      color: "text.secondary",
-                    }}
-                  >
-                    <Typography variant="caption">
-                      Select a document to preview
-                    </Typography>
-                  </Box>
+                    <Box
+                      sx={{
+                        height: "100%",
+                        display: "flex",
+                        flexDirection: "column",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        p: 3,
+                        textAlign: "center",
+                        background: "linear-gradient(135deg, #f9fafb 0%, #f0f4ff 100%)",
+                        borderRadius: 1,
+                      }}
+                    >
+                      <Box
+                        sx={{
+                          position: "relative",
+                          width: 160,
+                          height: 120,
+                          mb: 3,
+                        }}
+                      >
+                        <Box
+                          sx={{
+                            position: "absolute",
+                            top: 0,
+                            left: 20,
+                            width: 120,
+                            height: 90,
+                            backgroundColor: "white",
+                            borderRadius: 2,
+                            boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                          }}
+                        >
+                          <Description sx={{ fontSize: 40, color: "#3b54b0" }} />
+                        </Box>
+                        <Box
+                          sx={{
+                            position: "absolute",
+                            top: 15,
+                            left: 0,
+                            width: 100,
+                            height: 75,
+                            backgroundColor: "white",
+                            borderRadius: 2,
+                            boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
+                            opacity: 0.7,
+                          }}
+                        />
+                        <Box
+                          sx={{
+                            position: "absolute",
+                            top: 30,
+                            left: 40,
+                            width: 80,
+                            height: 60,
+                            backgroundColor: "white",
+                            borderRadius: 2,
+                            boxShadow: "0 4px 12px rgba(0,0,0,0.06)",
+                            opacity: 0.5,
+                          }}
+                        />
+                      </Box>
+
+                      <Typography variant="h6" sx={{ fontWeight: 600, mb: 1, color: "#2d3a80" }}>
+                        Document Preview Area
+                      </Typography>
+
+                      <Typography variant="body2" sx={{ mb: 2, color: "text.secondary", maxWidth: 280 }}>
+                        Select any document from the conversation to view its detailed content here
+                      </Typography>
+                    </Box>
                 )}
               </Box>
             </Box>
