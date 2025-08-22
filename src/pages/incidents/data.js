@@ -17,6 +17,7 @@ export const initialFolders = [
                 {
                     id: "1-1",
                     name: "Invoices",
+                    isExpanded:true,
                     files: [
                         {
                             id: "file7",

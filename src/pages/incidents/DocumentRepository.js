@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useLocation } from "react-router-dom";
 import { Modal } from "react-bootstrap";
 import {
   Button,
@@ -8,11 +8,6 @@ import {
   Typography,
   Breadcrumbs,
   Link,
-  Dialog,
-  DialogTitle,
-  Divider,
-  DialogContent,
-  DialogActions,
   Box,
   IconButton,
 } from "@mui/material";
@@ -26,12 +21,7 @@ import {
   findFolderById,
 } from "../../utils/helpers";
 import { useGlobalState } from "../../contexts/GlobalStateContext";
-import CloseIcon from "@mui/icons-material/Close";
-import PictureAsPdfIcon from "@mui/icons-material/PictureAsPdf";
-import DescriptionIcon from "@mui/icons-material/Description";
-import ArticleIcon from "@mui/icons-material/Article";
 import { initialFolders } from "./data";
-
 import {
   resetFolderPath,
   setFolderPath,
@@ -45,16 +35,29 @@ import {
   Delete,
   Download,
   DriveFileMove,
-  PersonAddAlt,
 } from "@mui/icons-material";
+import MoveDialog from "../DocumentsFunctions/MoveFunction";
+import DownloadDialog from "../DocumentsFunctions/DownloadFunction";
+import DeleteDialog from "../DocumentsFunctions/DeleteFunction";
+import PreviewDialog from "../DocumentsFunctions/PreviewDialog";
+import CustomModal from "../DocumentsFunctions/CustomModal";
 
 const DocumentRepository = () => {
-  const files = [
-    // { id: 7, type: "file", name: "TeamRoster.xlsx", typeofFile: "excel" },
-    // { id: 8, type: "file", name: "MarketingPlan.docx", typeofFile: "doc" },
-    { id: 9, type: "file", name: "SystemArchitecture.pdf", typeofFile: "pdf" },
+ const files = [
+  {
+    id: 9,
+    type: "file",
+    name: "SystemArchitecture.pdf",
+    typeofFile: "pdf",
+    url: "/files/invoice.pdf", 
+  },
+];
+  const sortDropDownOptions = [
+    { label: "Last modified" },
+    { label: "Last modified by me" },
+    { label: "Last opened by me" },
+    { label: "Name" },
   ];
-  const navigate = useNavigate();
   const location = useLocation();
   const dispatch = useDispatch();
   const { setUploadTrigger } = useGlobalState();
@@ -66,40 +69,128 @@ const DocumentRepository = () => {
   const folderPath = useSelector((root) => root.breadcrumb.folderPath);
   const activeFolder = useSelector((root) => root.breadcrumb.activeFolder);
   const [selectedIds, setSelectedIds] = useState([]);
-  const [lastSelectedIndex, setLastSelectedIndex] = useState(null);
-
   const [focusedIndex, setFocusedIndex] = useState(null);
   const [folderSelections, setFolderSelections] = useState({});
-
   const [folders, setFolders] = useState(initialFolders);
   const [selectedFolder, setSelectedFolder] = useState(folders[0]);
   const [searchTerm, setSearchTerm] = useState("");
-  const [showAISearch, setShowAISearch] = useState(false);
   const [newFolderName, setNewFolderName] = useState("");
   const [uploading, setUploading] = useState(false);
   const [previewFile, setPreviewFile] = useState(null);
-  const columns = 4;
-  const sortDropDownOptions = [
-    { label: "Last modified" },
-    { label: "Last modified by me" },
-    { label: "Last opened by me" },
-    { label: "Name" },
-  ];
-  const selectRange = (newIndex) => {
-    if (focusedIndex === null) return;
-
-    const start = Math.min(focusedIndex, newIndex);
-    const end = Math.max(focusedIndex, newIndex);
-
-    const rangeIds = allItems.slice(start, end + 1).map((item) => item.id);
-    setSelectedIds((prev) => Array.from(new Set([...prev, ...rangeIds])));
-  };
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [showDownloadDialog, setShowDownloadDialog] = useState(false);
+  const [showMoveDialog, setShowMoveDialog] = useState(false);
+  const [sortBy, setSortBy] = useState(sortDropDownOptions[0]);
 
   const allItems = activeFolder
     ? [...(activeFolder.children || []), ...(activeFolder.files || [])]
     : [...folders, ...filesInitial];
+  
+  useEffect(() => {
+    localStorage.setItem("folders", JSON.stringify(folders));
+  }, [folders]);
 
-  const [sortBy, setSortBy] = useState(sortDropDownOptions[0]);
+  useEffect(() => {
+    if (searchedFileName) {
+      let fileFound = false;
+      let folderWithFile = null;
+
+      folders.forEach((folder) => {
+        const foundFile = folder.files.find(
+          (file) => file.name === searchedFileName
+        );
+        if (foundFile) {
+          fileFound = true;
+          folderWithFile = folder;
+        }
+      });
+
+      if (fileFound) {
+        setSelectedFolder(folderWithFile);
+        setFileNotFound(false);
+      } else {
+        setFileNotFound(true);
+        alert(`File "${searchedFileName}" was not found in the repository.`);
+      }
+    }
+  }, [searchedFileName, folders]);
+
+  useEffect(() => {
+    setUploadTrigger(triggerFileInput);
+    return () => {
+      setUploadTrigger(null);
+    };
+  }, [setUploadTrigger]);
+
+  useEffect(() => {
+    if (activeFolder) {
+      const findUpdatedFolder = (foldersArray, folderId) => {
+        for (const folder of foldersArray) {
+          if (folder.id === folderId) return folder;
+          if (folder.children && folder.children.length > 0) {
+            const found = findUpdatedFolder(folder.children, folderId);
+            if (found) return found;
+          }
+        }
+        return null;
+      };
+
+      const updatedFolder = findUpdatedFolder(folders, activeFolder.id);
+      if (updatedFolder && updatedFolder !== activeFolder) {
+        dispatch(setActiveFolder(updatedFolder));
+      }
+    }
+  }, [folders, activeFolder, dispatch]);
+
+  const flattenItems = (folders) => {
+    let result = [];
+    folders.forEach((folder) => {
+      result.push(...folder.files); 
+      if (folder.children?.length) {
+        result.push(...flattenItems(folder.children)); 
+      }
+    });
+    return result;
+  };
+
+const handleMoveClick = () => {
+  const allFiles = [
+    ...filesInitial,          
+    ...flattenItems(folders)  
+  ];
+
+  const hasFileSelected = selectedIds.some((id) =>
+    allFiles.find((file) => file.id === id)
+  );
+
+  if (hasFileSelected) {
+    setShowMoveDialog(true);
+  }
+};
+
+  const handleConfirmMove = (targetFolder) => {
+    let updatedFolders = folders;
+
+    selectedIds.forEach((id) => {
+      let file = filesInitial.find((f) => f.id === id);
+      if (!file && activeFolder) {
+        file = activeFolder.files.find((f) => f.id === id);
+      }
+      if (file) {
+        updatedFolders = handleDelete(updatedFolders, file.id);
+        updatedFolders = updateFolderWithFiles(
+          updatedFolders,
+          targetFolder.id,
+          [file]
+        );
+      }
+    });
+
+    setFolders(updatedFolders);
+    setFilesIntial(filesInitial.filter((f) => !selectedIds.includes(f.id)));
+    setSelectedIds([]);
+    setShowMoveDialog(false);
+  };
 
   const triggerFileInput = () => {
     if (fileInputRef.current) {
@@ -150,7 +241,6 @@ const DocumentRepository = () => {
     }, 1000);
   };
 
-  // Unified selection handler
   const updateSelection = (newSelectedIds, focusIndex = null) => {
     setSelectedIds(newSelectedIds);
     if (activeFolder) {
@@ -164,32 +254,107 @@ const DocumentRepository = () => {
     }
   };
 
-const handleItemClick = (e, item, index) => {
-  if (e.shiftKey && focusedIndex !== null) {
-    // Shift + click: select range
-    const start = Math.min(focusedIndex, index);
-    const end = Math.max(focusedIndex, index);
-    const rangeIds = allItems.slice(start, end + 1).map((i) => i.id);
-    updateSelection(
-      Array.from(new Set([...selectedIds, ...rangeIds])),
-      index
-    );
-  } else if (e.metaKey || e.ctrlKey) {
-    // Ctrl/Cmd click: toggle selection
-    if (selectedIds.includes(item.id)) {
-      updateSelection(selectedIds.filter((id) => id !== item.id), index);
+  const handleItemClick = (e, item, index) => {
+    if (e.shiftKey && focusedIndex !== null) {
+      const start = Math.min(focusedIndex, index);
+      const end = Math.max(focusedIndex, index);
+      const rangeIds = allItems.slice(start, end + 1).map((i) => i.id);
+      updateSelection(
+        Array.from(new Set([...selectedIds, ...rangeIds])),
+        index
+      );
+    } else if (e.metaKey || e.ctrlKey) {
+      if (selectedIds.includes(item.id)) {
+        updateSelection(
+          selectedIds.filter((id) => id !== item.id),
+          index
+        );
+      } else {
+        updateSelection([...selectedIds, item.id], index);
+      }
     } else {
-      updateSelection([...selectedIds, item.id], index);
+      if (selectedIds.includes(item.id)) {
+        updateSelection([]);
+      } else {
+        updateSelection([item.id], index); 
+      }
     }
-  } else {
-    // Single click: toggle selection for the clicked item
-    if (selectedIds.includes(item.id)) {
-      updateSelection([]); // deselect if already selected
-    } else {
-      updateSelection([item.id], index); // select this item only
-    }
-  }
-};
+  };
+
+  const handleDownloadSelected = async () => {
+    setShowDownloadDialog(true);
+
+    const zip = new JSZip();
+
+    const addFolderToZip = (folder, zipFolder) => {
+      folder.files?.forEach((file) => {
+        zipFolder.file(file.name, `Dummy content of ${file.name}`);
+      });
+      folder.children?.forEach((childFolder) => {
+        const childZip = zipFolder.folder(childFolder.name);
+        addFolderToZip(childFolder, childZip);
+      });
+    };
+    const findFolderById = (folders, id) => {
+      for (const folder of folders) {
+        if (folder.id === id) return folder;
+        if (folder.children && folder.children.length > 0) {
+          const found = findFolderById(folder.children, id);
+          if (found) return found;
+        }
+      }
+      return null;
+    };
+    selectedIds.forEach((id) => {
+      const folder = findFolderById(folders, id);
+      if (folder) {
+        const zipFolder = zip.folder(folder.name);
+        addFolderToZip(folder, zipFolder);
+      } else {
+        let file = filesInitial.find((f) => f.id === id);
+        if (!file && activeFolder) {
+          file = activeFolder.files.find((f) => f.id === id);
+        }
+        if (file) {
+          zip.file(file.name, `Dummy content of ${file.name}`);
+        }
+      }
+    });
+
+    const blob = await zip.generateAsync({ type: "blob" });
+    saveAs(blob, `Selected_Items.zip`);
+
+    setShowDownloadDialog(false); // close after download finishes
+  };
+
+  const handleDeleteSelected = () => {
+    setShowDeleteDialog(true);
+  };
+
+  const handleConfirmDelete = () => {
+    let updatedFolders = folders;
+    let updatedFiles = filesInitial;
+
+    selectedIds.forEach((id) => {
+      if (folders.some((f) => f.id === id)) {
+        updatedFolders = handleDeleteFolder(updatedFolders, id);
+      } else {
+        updatedFiles = updatedFiles.filter((f) => f.id !== id);
+        if (activeFolder) {
+          updatedFolders = updateFolderWithFiles(
+            updatedFolders,
+            activeFolder.id,
+            activeFolder.files.filter((f) => f.id !== id)
+          );
+        }
+      }
+    });
+
+    setFolders(updatedFolders);
+    setFilesIntial(updatedFiles);
+    setSelectedIds([]);
+    setShowDeleteDialog(false); 
+  };
 
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -248,7 +413,7 @@ const handleItemClick = (e, item, index) => {
   const handleDelete = (folders, id) =>
     folders
       .map((folder) => {
-        if (folder.id === id) return null; // delete folder
+        if (folder.id === id) return null; 
         return {
           ...folder,
           files: folder.files.filter((file) => file.id !== id),
@@ -284,18 +449,6 @@ const handleItemClick = (e, item, index) => {
     }
   };
 
-  const getFilteredFiles = () => {
-    if (!searchTerm) {
-      return selectedFolder?.files || [];
-    }
-
-    return folders
-      .flatMap((folder) => folder.files)
-      .filter((file) =>
-        file.name.toLowerCase().includes(searchTerm.toLowerCase())
-      );
-  };
-
   const onClear = () => {
     setSelectedIds([]);
   };
@@ -303,9 +456,7 @@ const handleItemClick = (e, item, index) => {
   const openFolder = (folder) => {
     dispatch(setActiveFolder(folder));
     dispatch(addFolderToPath(folder));
-
-    // Reset selection for this folder
-    setSelectedIds([]); // <-- Always clear selection when opening
+    setSelectedIds([]); 
     setFocusedIndex(null);
   };
 
@@ -322,7 +473,6 @@ const handleItemClick = (e, item, index) => {
 
   const handleViewClick = (file) => {
     setPreviewFile(file);
-    console.log(file, "preview file");
   };
 
   const handleClosePreview = () => {
@@ -348,7 +498,6 @@ const handleItemClick = (e, item, index) => {
     });
   };
 
-  // Delete Folder
   const handleDeleteFolder = (folders, folderId) => {
     return folders
       .filter((folder) => folder.id !== folderId)
@@ -365,7 +514,7 @@ const handleItemClick = (e, item, index) => {
 
     const addFilesToZip = (currentFolder, zipFolder) => {
       currentFolder.files?.forEach((file) => {
-        zipFolder.file(file.name, `Dummy content of ${file.name}`); // replace with file.blob if available
+        zipFolder.file(file.name, `Dummy content of ${file.name}`);
       });
 
       currentFolder.children?.forEach((childFolder) => {
@@ -379,62 +528,6 @@ const handleItemClick = (e, item, index) => {
     const blob = await zip.generateAsync({ type: "blob" });
     saveAs(blob, `${folder.name}.zip`);
   };
-  useEffect(() => {
-    localStorage.setItem("folders", JSON.stringify(folders));
-  }, [folders]);
-
-  useEffect(() => {
-    if (searchedFileName) {
-      let fileFound = false;
-      let folderWithFile = null;
-
-      folders.forEach((folder) => {
-        const foundFile = folder.files.find(
-          (file) => file.name === searchedFileName
-        );
-        if (foundFile) {
-          fileFound = true;
-          folderWithFile = folder;
-        }
-      });
-
-      if (fileFound) {
-        setSelectedFolder(folderWithFile);
-        setFileNotFound(false);
-      } else {
-        setFileNotFound(true);
-        alert(`File "${searchedFileName}" was not found in the repository.`);
-      }
-    }
-  }, [searchedFileName, folders]);
-
-  useEffect(() => {
-    setUploadTrigger(triggerFileInput);
-    return () => {
-      setUploadTrigger(null);
-    };
-  }, [setUploadTrigger]);
-
-  useEffect(() => {
-    // Sync activeFolder with current folders state
-    if (activeFolder) {
-      const findUpdatedFolder = (foldersArray, folderId) => {
-        for (const folder of foldersArray) {
-          if (folder.id === folderId) return folder;
-          if (folder.children && folder.children.length > 0) {
-            const found = findUpdatedFolder(folder.children, folderId);
-            if (found) return found;
-          }
-        }
-        return null;
-      };
-
-      const updatedFolder = findUpdatedFolder(folders, activeFolder.id);
-      if (updatedFolder && updatedFolder !== activeFolder) {
-        dispatch(setActiveFolder(updatedFolder));
-      }
-    }
-  }, [folders, activeFolder, dispatch]);
 
   return (
     <div className="p-4 ">
@@ -445,7 +538,7 @@ const handleItemClick = (e, item, index) => {
         multiple
         hidden
         onChange={handleFileUpload}
-        disabled={uploading} // prevent multiple clicks
+        disabled={uploading} 
       />
       {uploading && (
         <div
@@ -487,15 +580,21 @@ const handleItemClick = (e, item, index) => {
             <Typography variant="body2" sx={{ fontWeight: 500 }}>
               {selectedIds.length} selected
             </Typography>
-
             <Box display="flex" alignItems="center" gap={0.5}>
-              <IconButton size="small">
+              <IconButton size="small" onClick={handleDownloadSelected}>
                 <Download fontSize="small" />
               </IconButton>
-              <IconButton size="small">
+              <IconButton
+                size="small"
+                onClick={handleMoveClick}
+                disabled={selectedIds.every((id) => {
+                  const item = allItems.find((i) => i.id === id);
+                  return item?.isExpanded; 
+                })}
+              >
                 <DriveFileMove fontSize="small" />
               </IconButton>
-              <IconButton size="small">
+              <IconButton size="small" onClick={handleDeleteSelected}>
                 <Delete fontSize="small" />
               </IconButton>
             </Box>
@@ -510,7 +609,6 @@ const handleItemClick = (e, item, index) => {
               renderInput={(params) => (
                 <TextField
                   {...params}
-                  // label="Sort by"
                   size="small"
                   variant="outlined"
                   sx={{
@@ -576,14 +674,12 @@ const handleItemClick = (e, item, index) => {
                       name={folder.name}
                       onClick={(e) =>
                         handleItemClick(e, folder, index, filesInitial)
-                      } // single click = select
+                      }
                       onDoubleClick={() => {
-                        setSelectedIds([]); // Clear selection like Google Drive
-                        openFolder(folder); // Your existing logic
-                      }} // double click = open
+                        setSelectedIds([]);
+                        openFolder(folder);
+                      }} 
                       onRename={(newName) => {
-                        console.log("RENAME3");
-
                         const updated = handleRenameFolder(
                           folders,
                           folder.id,
@@ -606,7 +702,6 @@ const handleItemClick = (e, item, index) => {
                       date={new Date(folder.uploadedAt).toLocaleDateString()}
                       typeofFile={folder.typeofFile}
                       onRename={(newName) => {
-                        console.log("RENAME");
                         const updated = handleRenameFolder(
                           folders,
                           folder.id,
@@ -614,14 +709,13 @@ const handleItemClick = (e, item, index) => {
                         );
                         setFolders(updated);
                       }}
-                      isSelected={selectedIds.includes(folder.id)} // NEW
+                      isSelected={selectedIds.includes(folder.id)} 
                       onClick={(e) =>
                         handleItemClick(e, folder, index, filesInitial)
                       }
                       handleViewClick={() => handleViewClick(folder)}
                       handleDownloadClick={() => handleDownloadClick(folder)}
                       onDoubleClick={() => {
-                        // maybe open preview for files
                         setSelectedIds([]);
                         handleViewClick(folder);
                       }}
@@ -637,21 +731,17 @@ const handleItemClick = (e, item, index) => {
           ) : (
             <>
               <div style={{ display: "flex", flexWrap: "wrap", gap: "16px" }}>
-                {/*  Show subfolders */}
                 {activeFolder?.children?.map((folder, index) => (
                   <FileFolderCard
                     key={folder.id}
                     type="folder"
                     name={folder.name}
                     isSelected={selectedIds.includes(folder.id)}
-                    // Single click: select only
                     onClick={(e) => handleItemClick(e, folder, index)}
-                    // Double click: open folder
                     onDoubleClick={() => {
-                      setSelectedIds([]); // clear selection like Google Drive
-                      openFolder(folder); // this will setActiveFolder and add to path
+                      setSelectedIds([]); 
+                      openFolder(folder);
                     }}
-                    // Rename
                     onRename={(newName) => {
                       const updated = handleRenameFolder(
                         folders,
@@ -660,12 +750,10 @@ const handleItemClick = (e, item, index) => {
                       );
                       setFolders(updated);
                     }}
-                    // Delete
                     onDelete={() => {
                       const updated = handleDeleteFolder(folders, folder.id);
                       setFolders(updated);
                     }}
-                    // Download
                     onDownload={() => handleDownloadFolder(folder)}
                   />
                 ))}
@@ -683,8 +771,6 @@ const handleItemClick = (e, item, index) => {
                     date={new Date(file.uploadedAt).toLocaleDateString()}
                     typeofFile={file.typeofFile}
                     onRename={(newName) => {
-                      console.log("RENAME2");
-
                       const updated = handleRename(folders, file.id, newName);
                       setFolders(updated);
                       if (activeFolder) {
@@ -698,7 +784,6 @@ const handleItemClick = (e, item, index) => {
                     handleViewClick={() => handleViewClick(file)}
                     handleDownloadClick={() => handleDownloadClick(file)}
                     onDoubleClick={() => {
-                      // maybe open preview for files
                       setSelectedIds([]);
                       handleViewClick(file);
                     }}
@@ -737,8 +822,6 @@ const handleItemClick = (e, item, index) => {
                   date={new Date(file.uploadedAt).toLocaleDateString()}
                   typeofFile={file.typeofFile}
                   onRename={(newName) => {
-                    console.log("RENAME4");
-
                     const updatedFiles = filesInitial.map((f) =>
                       f.id === file.id ? { ...f, name: newName } : f
                     );
@@ -752,7 +835,6 @@ const handleItemClick = (e, item, index) => {
                   }}
                   handleViewClick={() => handleViewClick(file)}
                   onDoubleClick={() => {
-                    // maybe open preview for files
                     setSelectedIds([]);
                     handleViewClick(file);
                   }}
@@ -763,159 +845,50 @@ const handleItemClick = (e, item, index) => {
           </>
         )}
       </div>
-
-      <Modal
-        show={showAddFolderModal}
-        onHide={() => dispatch(setShowAddFolderModal(false))}
-        centered
-        dialogClassName="custom-modal"
-        sx={{borderRadius:"12px !important"}}
-      >
-        <Modal.Header style={{ borderBottom: "none", padding: "1rem 1.5rem" }}>
-          <Modal.Title style={{ fontWeight: "500", fontSize: "1.25rem" }}>
-            New Folder
-          </Modal.Title>
-        </Modal.Header>
-
-        <Modal.Body style={{ padding: "1rem 1.5rem" }}>
-          <input
-            type="text"
-            value={newFolderName}
-            onChange={(e) => setNewFolderName(e.target.value)}
-            placeholder="Folder name"
-            className="form-control"
-            style={{
-              borderRadius: "12px",
-              border: "1px solid #ccc",
-              padding: "0.5rem 0.75rem",
-              fontSize: "1rem",
-              outline: "none",
-              backgroundColor:'#f8fafc'
-            }}
-          />
-        </Modal.Body>
-
-        <Modal.Footer style={{ borderTop: "none", padding: "0.75rem 1.5rem" }}>
-          <Button
-            variant="light"
-            onClick={() => dispatch(setShowAddFolderModal(false))}
-            style={{
-              borderRadius: "8px",
-              border: "1px solid #ccc",
-              fontWeight: "500",
-              padding: "0.5rem 1rem",
-            }}
-          >
-            Cancel
-          </Button>
-          <Button
-            variant="primary"
-            onClick={handleSaveNewFolder}
-            style={{
-              borderRadius: "8px",
-              padding: "0.5rem 1rem",
-              fontWeight: "500",
-            }}
-          >
-            OK
-          </Button>
-        </Modal.Footer>
-      </Modal>
-
-      <Dialog
-        open={Boolean(previewFile)}
-        onClose={handleClosePreview}
-        maxWidth="md"
-        fullWidth
-        PaperProps={{
-          sx: { borderRadius: 3, overflow: "hidden" },
-        }}
-      >
-        {/* Header */}
-        <DialogTitle
-          sx={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            bgcolor: "#f5f5f5",
-            px: 3,
-            py: 2,
-          }}
-        >
-          <Box display="flex" alignItems="center" gap={1}>
-            {previewFile?.typeofFile === "pdf" ? (
-              <PictureAsPdfIcon color="error" />
-            ) : previewFile?.typeofFile === "txt" ? (
-              <ArticleIcon color="primary" />
-            ) : (
-              <DescriptionIcon color="action" />
-            )}
-            <Typography variant="h6" noWrap>
-              {previewFile?.name}
-            </Typography>
-          </Box>
-          <IconButton onClick={handleClosePreview}>
-            <CloseIcon />
-          </IconButton>
-        </DialogTitle>
-
-        <Divider />
-
-        {/* Content */}
-        <DialogContent
-          dividers
-          sx={{
-            bgcolor: "background.default",
-            minHeight: "400px",
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-          }}
-        >
-          {previewFile &&
-          previewFile?.typeofFile !== "img" &&
-          previewFile?.typeofFile !== "invoicepdf" ? (
-            <iframe
-              src="/files/repo.pdf"
-              style={{ width: "100%", height: "80vh", border: "none" }}
-              title="PDF Preview"
-            />
-          ) : previewFile?.typeofFile === "img" ? (
-            <div style={{ width: "100%", height: "100vh" }}>
-              <iframe
-                src="/files/Screenshot.png"
-                style={{ width: "100%", height: "100vh", border: "none" }}
-                title="img"
-              />
-            </div>
-          ) : previewFile?.typeofFile === "invoicepdf" ? (
-            <div style={{ width: "100%", height: "100vh" }}>
-              <iframe
-                src="/files/invoice.pdf"
-                style={{ width: "100%", height: "80vh", border: "none" }}
-                title="invoce pdf"
-              />
-            </div>
-          ) : (
-            <Typography
-              variant="body2"
-              color="text.secondary"
-              textAlign="center"
-            >
-              No preview available.
-            </Typography>
-          )}
-        </DialogContent>
-        <DialogActions sx={{ px: 3, py: 2, bgcolor: "#fafafa" }}>
-          <Button
-            onClick={handleClosePreview}
-            variant="contained"
-            sx={{ borderRadius: 2, px: 3 }}
-          >
-            Close
-          </Button>
-        </DialogActions>
-      </Dialog>
+ <CustomModal
+  show={showAddFolderModal}
+  onClose={() => dispatch(setShowAddFolderModal(false))}
+  onConfirm={handleSaveNewFolder}
+  title="New Folder"
+  bodyContent={
+    <input
+      type="text"
+      value={newFolderName}
+      onChange={(e) => setNewFolderName(e.target.value)}
+      placeholder="Folder name"
+      className="form-control"
+      style={{
+        borderRadius: "12px",
+        border: "1px solid #ccc",
+        padding: "0.5rem 0.75rem",
+        fontSize: "1rem",
+        outline: "none",
+        backgroundColor: "#f8fafc",
+      }}
+    />
+  }
+/>     
+ <PreviewDialog
+      open={Boolean(previewFile)}
+      onClose={handleClosePreview}
+      file={previewFile}
+    />
+      <DeleteDialog
+        open={showDeleteDialog}
+        onClose={() => setShowDeleteDialog(false)}
+        onConfirm={handleConfirmDelete}
+        selectedItems={selectedIds}
+      />
+      <DownloadDialog
+        open={showDownloadDialog}
+        message="Preparing your download..."
+      />
+      <MoveDialog
+        open={showMoveDialog}
+        onClose={() => setShowMoveDialog(false)}
+        onConfirm={handleConfirmMove}
+        folders={folders}
+      />
     </div>
   );
 };
