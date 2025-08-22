@@ -164,34 +164,33 @@ const DocumentRepository = () => {
     }
   };
 
-  // Mouse click handler
-  const handleItemClick = (e, item, index) => {
-    if (e.shiftKey && focusedIndex !== null) {
-      // Shift + click: select range
-      const start = Math.min(focusedIndex, index);
-      const end = Math.max(focusedIndex, index);
-      const rangeIds = allItems.slice(start, end + 1).map((i) => i.id);
-      updateSelection(
-        Array.from(new Set([...selectedIds, ...rangeIds])),
-        index
-      );
-    } else if (e.metaKey || e.ctrlKey) {
-      // Ctrl/Cmd click: toggle selection
-      if (selectedIds.includes(item.id)) {
-        updateSelection(
-          selectedIds.filter((id) => id !== item.id),
-          index
-        );
-      } else {
-        updateSelection([...selectedIds, item.id], index);
-      }
+const handleItemClick = (e, item, index) => {
+  if (e.shiftKey && focusedIndex !== null) {
+    // Shift + click: select range
+    const start = Math.min(focusedIndex, index);
+    const end = Math.max(focusedIndex, index);
+    const rangeIds = allItems.slice(start, end + 1).map((i) => i.id);
+    updateSelection(
+      Array.from(new Set([...selectedIds, ...rangeIds])),
+      index
+    );
+  } else if (e.metaKey || e.ctrlKey) {
+    // Ctrl/Cmd click: toggle selection
+    if (selectedIds.includes(item.id)) {
+      updateSelection(selectedIds.filter((id) => id !== item.id), index);
     } else {
-      // Single click: select only this item
-      updateSelection([item.id], index);
+      updateSelection([...selectedIds, item.id], index);
     }
-  };
+  } else {
+    // Single click: toggle selection for the clicked item
+    if (selectedIds.includes(item.id)) {
+      updateSelection([]); // deselect if already selected
+    } else {
+      updateSelection([item.id], index); // select this item only
+    }
+  }
+};
 
-  // Keyboard navigation handler
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (focusedIndex === null) return;
