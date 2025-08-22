@@ -86,7 +86,6 @@ const FileFolderCard = ({
   };
 
 
-  // Determine icon based on file type
   const renderFileIcon = () => {
     if (isFolder) return <FolderIcon sx={{ fontSize: 28, color: "#06379e" }} />;
 

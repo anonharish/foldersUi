@@ -9,11 +9,11 @@ span,
 em,
 a,
 strong {
-    font-family: "Montserrat", sans-serif !important;
+  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif !important;
 }
 
 .css-cdi5lf-MuiTypography-root {
-    font-family: "Montserrat", sans-serif !important;
+  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif !important;
 }
 
 header {
@@ -254,7 +254,7 @@ header h3 {
 }
 
 .css-1yl09fs-MuiDataGrid-root {
-    font-family: "Montserrat", sans-serif !important;
+  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif !important;
     font-size: 16px !important;
     color: #000 !important;
     font-weight: 500 !important;
@@ -572,7 +572,7 @@ header h3 {
     padding: 13px;
     font-weight: 600;
     font-size: 16px;
-    font-family: "Montserrat", sans-serif !important;
+  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif !important;
 
 }
 
@@ -582,7 +582,7 @@ header h3 {
 }
 
 .css-1ex1afd-MuiTableCell-root {
-    font-family: "Montserrat", sans-serif !important;
+  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif !important;
 }
 
 

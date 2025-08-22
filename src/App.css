@@ -4,9 +4,8 @@
 
 body {
   margin: 0 !important;
-  font-family: "Montserrat", sans-serif !important;
-  /* background-color: #f6f6f6 !important; */
-  background-color: #d8ccbb !important;
+  background-color: #eaebf6; /* Your global background */
+  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif; /* Global font */
 }
 
 h1,
@@ -20,11 +19,12 @@ span,
 em,
 a,
 strong {
-  font-family: "Montserrat", sans-serif !important;
+  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif !important;
 }
 
 .css-cdi5lf-MuiTypography-root {
-  font-family: "Montserrat", sans-serif !important;
+    font-family: system-ui, Avenir, Helvetica, Arial, sans-serif !important;
+
 }
 
 header {
@@ -231,7 +231,7 @@ header h3 {
   padding: 13px;
   font-weight: 600;
   font-size: 16px;
-  font-family: "Montserrat", sans-serif !important;
+  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif !important;
   color: #fff;
 
 }
@@ -564,8 +564,12 @@ input {
 .accordian_tbl_txt{
   color:brown !important;
   font-weight: 600 !important;
-  font-family: "Montserrat", sans-serif !important;
+  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif !important;
   text-align: center !important;
+}
+.custom-modal .modal-content {
+  border-radius: 12px; 
+  overflow: hidden; 
 }
 
 .close_incident_btn {

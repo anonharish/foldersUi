@@ -473,7 +473,7 @@ const DocumentRepository = () => {
             display: "flex",
             alignItems: "center",
             justifyContent: "space-between",
-            backgroundColor: "#f8fafc", // same as Drive light blue
+            backgroundColor: "#f8fafc",
             borderRadius: "24px",
             px: 2,
             py: 0.5,
@@ -770,6 +770,7 @@ const DocumentRepository = () => {
         onHide={() => dispatch(setShowAddFolderModal(false))}
         centered
         dialogClassName="custom-modal"
+        sx={{borderRadius:"12px !important"}}
       >
         <Modal.Header style={{ borderBottom: "none", padding: "1rem 1.5rem" }}>
           <Modal.Title style={{ fontWeight: "500", fontSize: "1.25rem" }}>
@@ -785,11 +786,12 @@ const DocumentRepository = () => {
             placeholder="Folder name"
             className="form-control"
             style={{
-              borderRadius: "8px",
+              borderRadius: "12px",
               border: "1px solid #ccc",
               padding: "0.5rem 0.75rem",
               fontSize: "1rem",
               outline: "none",
+              backgroundColor:'#f8fafc'
             }}
           />
         </Modal.Body>

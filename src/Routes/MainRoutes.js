@@ -7,17 +7,12 @@ import ForgotPassword from "../pages/authPages/ForgotPassword";
 import VerifyOtp from "../pages/authPages/VerifyOtp";
 import ResetPassword from "../pages/authPages/ResetPassword";
 import LoginPage from "../pages/authPages/Login";
+import NotFound from "../pages/authPages/NotFondPage";
 
-
-
-const IncidentDashboard = lazy(() => import('./../pages/IncidentDashboard'));
-const Incident = lazy(() => import('./../pages/incidents/Incident'));
-const CreateIncident = lazy(() => import('./../pages/incidents/CreateIncident'));
-const IncidentDetails = lazy(() => import('./../pages/incidents/IncidentDetails'));
-const User = lazy(() => import('./../pages/users/User'));
-const AddUser = lazy(() => import('./../pages/users/AddUser'));
 const DocumentRepository = lazy(() => import('./../pages/incidents/DocumentRepository'));
-const AISearchDashboard = lazy(() => import('./../componnets/incidents/AISearch'));
+const RecentDocs = lazy(() => import('./../pages/RecentDocs'));
+const StarredDocs = lazy(() => import('./../pages/StarredDocs'));
+const DeletedDocs = lazy(() => import('./../pages/DeletedDocs'));
 
 export const privateRoutes = [
   {
@@ -29,18 +24,10 @@ export const privateRoutes = [
     ),
     children: [
       { index: true, element: <Navigate to="/home" replace /> },
-
-      { path: "incident/dashboard", element: <IncidentDashboard/> },
-      { path: "incident", element: <Incident /> },
-      { path: "incident/create", element: <CreateIncident /> },
-      { path: "incident/details/:id", element: <IncidentDetails /> },
-
-      { path: "admin/pannel", element: <User /> },
-      { path: "admin/pannel/adduser", element: <AddUser /> },
-
-      { path: "home", element: <DocumentRepository /> },
-      { path: "document/aiSearch", element: <AISearchDashboard /> },
-    ],
+      { path: "home", element: <DocumentRepository /> },  
+     { path: "recent", element: <RecentDocs /> },  
+     { path: "starred", element: <StarredDocs /> },  
+    { path: "deleted", element: <DeletedDocs /> },  ],
   },
 ];
 
@@ -59,4 +46,9 @@ export const publicRoutes = [
 ];
 
 
-export const appRoutes = [...privateRoutes, ...publicRoutes];
+export const appRoutes = [
+  ...privateRoutes,
+  ...publicRoutes,
+  { path: "*", element: <NotFound /> }, 
+];
+
