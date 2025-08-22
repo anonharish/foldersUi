@@ -236,33 +236,46 @@ const DocumentRepository = () => {
     }
   };
 
-  const handleFileUpload = (event) => {
+const handleFileUpload = (event) => {
     const files = Array.from(event.target.files);
+    console.log(files, "files uploaded");
     if (!files.length) return;
     setUploading(true);
+
     setTimeout(() => {
-      setFolders((prevFolders) => {
-        let updatedFolders;
+      setFolders((prev) => {
+        let updatedState;
 
         if (!activeFolder) {
-          updatedFolders = [
-            ...prevFolders,
-            ...files.map((file) => ({
-              id: Date.now() + Math.random(),
-              name: file.name,
-              type: "file",
-              size: file.size,
-              uploadedAt: new Date().toISOString(),
-              url: "#",
-              typeofFile: getFileType(file.name),
-            })),
-          ];
+          // Add files to root "files" array
+          updatedState = {
+            ...prev,
+            files: [
+              ...prev.files,
+              ...files.map((file) => ({
+                id: Date.now() + Math.random(),
+                name: file.name,
+                type: file.type,
+                size: file.size,
+                uploadedAt: new Date().toISOString(),
+                url: "#",
+                typeofFile: getFileType(file.name),
+              })),
+            ],
+          };
+          setFilesIntial(updatedState.files);
         } else {
-          updatedFolders = updateFolderWithFiles(
-            prevFolders,
+          // Add files inside the activeFolder
+          const updatedFolders = updateFolderWithFiles(
+            prev.folders,
             activeFolder.id,
             files
           );
+
+          updatedState = {
+            ...prev,
+            folders: updatedFolders,
+          };
 
           const updatedActiveFolder = findFolderById(
             updatedFolders,
@@ -271,7 +284,7 @@ const DocumentRepository = () => {
           setActiveFolder(updatedActiveFolder);
         }
 
-        return updatedFolders;
+        return updatedState;
       });
 
       setUploading(false);
@@ -472,10 +485,39 @@ const DocumentRepository = () => {
       .filter(Boolean);
   };
 
-  const handleSaveNewFolder = () => {
-    if (!newFolderName.trim()) {
-      return;
+const addFolderToStructure = (structure, newFolder, parentId) => {
+    if (!parentId) {
+      // add at root level
+      return {
+        ...structure,
+        folders: [...structure.folders, newFolder],
+      };
     }
+
+    const updateChildren = (folders) => {
+      return folders.map((folder) => {
+        if (folder.id === parentId) {
+          return {
+            ...folder,
+            children: [...(folder.children || []), newFolder],
+          };
+        }
+        return {
+          ...folder,
+          children: updateChildren(folder.children || []),
+        };
+      });
+    };
+
+    return {
+      ...structure,
+      folders: updateChildren(structure.folders),
+    };
+  };
+
+  const handleSaveNewFolder = (newFolderName) => {
+    if (!newFolderName?.trim()) return;
+
     const newFolder = {
       id: Date.now().toString(),
       name: newFolderName.trim(),
@@ -484,18 +526,26 @@ const DocumentRepository = () => {
       isExpanded: true,
       children: [],
     };
-    try {
-      const updatedFolders = addFolderToStructure(
-        folders,
+
+    setFolders((prev) => {
+      const updated = addFolderToStructure(
+        prev,
         newFolder,
         activeFolder ? activeFolder.id : null
       );
-      setFolders(updatedFolders);
-      setSelectedFolder(newFolder);
-      dispatch(setShowAddFolderModal(false));
-      setNewFolderName("");
-    } catch (error) {
-      console.error("Error adding folder:", error);
+      return updated;
+    });
+
+    setSelectedFolder(newFolder);
+    dispatch(setShowAddFolderModal(false));
+    setNewFolderName("");
+
+    // Optional: refresh activeFolder view immediately
+    if (activeFolder) {
+      setActiveFolder((prev) => ({
+        ...prev,
+        children: [...(prev?.children || []), newFolder],
+      }));
     }
   };
 
@@ -675,7 +725,7 @@ const DocumentRepository = () => {
         separator="›"
         sx={{ padding: "4px", color: "black" }}
       >
-        {activeFolder ? (
+        {activeFolder && 
           <Link
             underline="hover"
             color="inherit"
@@ -684,11 +734,7 @@ const DocumentRepository = () => {
           >
             Home
           </Link>
-        ) : (
-          <Typography variant="h6" fontWeight={600} sx={{ color: "blue" }}>
-            Home
-          </Typography>
-        )}
+        }
         {Array.isArray(folderPath) &&
           folderPath.map((folder, index) => {
             const isLast = index === folderPath.length - 1;
@@ -896,7 +942,7 @@ const DocumentRepository = () => {
       <CustomModal
         show={showAddFolderModal}
         onClose={() => dispatch(setShowAddFolderModal(false))}
-        onConfirm={handleSaveNewFolder}
+        onConfirm={()=>handleSaveNewFolder(newFolderName)}
         title="New Folder"
         bodyContent={
           <input

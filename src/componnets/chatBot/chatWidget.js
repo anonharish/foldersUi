@@ -30,6 +30,7 @@ import chatBot from "../../assets/chatbot.png";
 import FloatingChatIcon from "./FloatChatBot";
 import { sampleResponse } from "../incidents/sampleAiSearchResponse";
 import FileViewer from "./FileViewer";
+import { Bot } from "lucide-react";
 
 const dummyBotResponse = {
   answer: "Here is a dummy response with table and suggestions.",
@@ -455,7 +456,7 @@ const ChatWidget = () => {
                         sx={{ display: "flex", justifyContent: "flex-start" }}
                       >
                         <Avatar sx={{ bgcolor: "#3b54b0", mr: 1 }}>
-                          <img src={chatBot} alt="bot" width={20} />
+                         <Bot/>
                         </Avatar>
                         <TypingIndicator />
                       </Box>

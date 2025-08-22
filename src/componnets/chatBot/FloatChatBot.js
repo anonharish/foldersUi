@@ -2,6 +2,7 @@ import React, { useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { IconButton } from "@mui/material";
 import chatBot from "../../assets/chatbot.png";
+import { Bot } from "lucide-react";
 
 const FloatingChatIcon = ({ onClick }) => {
   const pointerDownPos = useRef({ x: 0, y: 0 });
@@ -72,8 +73,8 @@ const FloatingChatIcon = ({ onClick }) => {
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}
         sx={{
-          width: 68,
-          height: 68,
+          width: 62,
+          height: 62,
           borderRadius: "50%",
           backgroundColor: "#3b54b0",
           color: "white",
@@ -87,16 +88,8 @@ const FloatingChatIcon = ({ onClick }) => {
           },
         }}
       >
-        <img
-          src={chatBot}
-          alt="chatBot"
-          style={{
-            width: 38,
-            height: 38,
-            pointerEvents: "none",
-            filter: "drop-shadow(0 1px 1px rgba(0,0,0,0.2))",
-          }}
-        />
+                                <Bot size={32}/>
+       
       </IconButton>
     </motion.div>
   );

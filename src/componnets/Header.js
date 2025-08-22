@@ -99,6 +99,7 @@ const Header = ({ isSidebarOpen, currentTab, onSidebarToggle }) => {
             </IconButton>
           )}
         </Box>
+        <Typography sx={{color:'black',fontWeight:'bold',fontSize:'24px'}}>My Documents</Typography>
         <Box flexGrow={1} mx={2} display="flex" justifyContent="center">
           <Paper
             component="form"
@@ -128,7 +129,7 @@ const Header = ({ isSidebarOpen, currentTab, onSidebarToggle }) => {
         
         <Box display="flex" alignItems="center" gap={1}>
           <IconButton onClick={handleAvatarClick}>
-            <Avatar sx={{ width: 28, height: 28, fontSize: "0.875rem", background: "linear-gradient(to right, #3b54b0, #ea641f)" }}>
+            <Avatar sx={{ width: 30, height: 30, fontSize: "0.875rem", background: "linear-gradient(to right, #3b54b0, #ea641f)" }}>
                {getInitials(user?.username || "U")}
             </Avatar>
           </IconButton>
