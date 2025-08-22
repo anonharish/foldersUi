@@ -15,6 +15,8 @@ import {
   DialogActions,
   Box,
   IconButton,
+  CircularProgress,
+  Slide,
 } from "@mui/material";
 import FileFolderCard from "../../componnets/FileFolderCard";
 import { useDispatch, useSelector } from "react-redux";
@@ -45,6 +47,7 @@ import {
   Delete,
   Download,
   DriveFileMove,
+  FolderOpen,
   PersonAddAlt,
 } from "@mui/icons-material";
 
@@ -78,6 +81,154 @@ const DocumentRepository = () => {
   const [newFolderName, setNewFolderName] = useState("");
   const [uploading, setUploading] = useState(false);
   const [previewFile, setPreviewFile] = useState(null);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [showDownloadDialog, setShowDownloadDialog] = useState(false);
+  const [showMoveDialog, setShowMoveDialog] = useState(false);
+
+  // Slide animation
+  const Transition = React.forwardRef(function Transition(props, ref) {
+    return <Slide direction="up" ref={ref} {...props} />;
+  });
+
+  function MoveDialog({ open, onClose, onConfirm, folders }) {
+    const [selectedTarget, setSelectedTarget] = useState(null);
+
+    return (
+      <Dialog
+        open={open}
+        onClose={onClose}
+        TransitionComponent={Transition}
+        PaperProps={{
+          sx: {
+            borderRadius: "12px",
+            boxShadow: "0px 6px 20px rgba(0,0,0,0.15)",
+            width: 400,
+          },
+        }}
+      >
+        {/* Custom Header */}
+        <Box
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            background: "linear-gradient(135deg, #6a11cb 0%, #2575fc 100%)", // ✅ use background
+            color: "white",
+            p: 2,
+            borderTopLeftRadius: "16px",
+            borderTopRightRadius: "16px",
+          }}
+        >
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+            <FolderOpen />
+            <Typography variant="h6">Move File(s)</Typography>
+          </Box>
+          <IconButton onClick={onClose} sx={{ color: "white" }}>
+            <Close />
+          </IconButton>
+        </Box>
+
+        {/* Body */}
+        <DialogContent sx={{ mt: 2 }}>
+          <Typography variant="body2" sx={{ mb: 1, color: "text.secondary" }}>
+            Select a target folder where you want to move the files:
+          </Typography>
+          <Autocomplete
+            options={folders}
+            getOptionLabel={(option) => option.name}
+            onChange={(e, newValue) => setSelectedTarget(newValue)}
+            renderInput={(params) => (
+              <TextField
+                {...params}
+                label="Choose folder"
+                variant="outlined"
+                fullWidth
+                sx={{
+                  "& .MuiOutlinedInput-root": {
+                    borderRadius: "12px",
+                  },
+                }}
+              />
+            )}
+          />
+        </DialogContent>
+
+        {/* Actions */}
+        <DialogActions sx={{ px: 3, pb: 2 }}>
+          <Button
+            onClick={onClose}
+            variant="outlined"
+            sx={{ borderRadius: "10px" }}
+          >
+            Cancel
+          </Button>
+          <Button
+            onClick={() => selectedTarget && onConfirm(selectedTarget)}
+            disabled={!selectedTarget}
+            variant="contained"
+            sx={{
+              borderRadius: "10px",
+              bgcolor: "#2575fc",
+              "&:hover": { bgcolor: "#1a5dcc" },
+            }}
+          >
+            Move
+          </Button>
+        </DialogActions>
+      </Dialog>
+    );
+  }
+
+  const flattenItems = (folders) => {
+    let result = [];
+    folders.forEach((folder) => {
+      result.push(...folder.files); // files in this folder
+      if (folder.children?.length) {
+        result.push(...flattenItems(folder.children)); // recurse into subfolders
+      }
+    });
+    return result;
+  };
+
+  const handleMoveClick = () => {
+    const allFiles = flattenItems(folders); // folders = root folders
+    const hasFileSelected = selectedIds.some((id) =>
+      allFiles.find((file) => file.id === id)
+    );
+
+    if (hasFileSelected) {
+      setShowMoveDialog(true);
+    }
+  };
+
+  const handleConfirmMove = (targetFolder) => {
+    let updatedFolders = folders;
+
+    selectedIds.forEach((id) => {
+      // find file from root or active folder
+      let file = filesInitial.find((f) => f.id === id);
+      if (!file && activeFolder) {
+        file = activeFolder.files.find((f) => f.id === id);
+      }
+      if (file) {
+        // remove from current place
+        updatedFolders = handleDelete(updatedFolders, file.id);
+
+        // add into target folder
+        updatedFolders = updateFolderWithFiles(
+          updatedFolders,
+          targetFolder.id,
+          [file]
+        );
+      }
+    });
+
+    setFolders(updatedFolders);
+    setFilesIntial(filesInitial.filter((f) => !selectedIds.includes(f.id)));
+    setSelectedIds([]);
+    setShowMoveDialog(false);
+  };
+
   const columns = 4;
   const sortDropDownOptions = [
     { label: "Last modified" },
@@ -164,32 +315,117 @@ const DocumentRepository = () => {
     }
   };
 
-const handleItemClick = (e, item, index) => {
-  if (e.shiftKey && focusedIndex !== null) {
-    // Shift + click: select range
-    const start = Math.min(focusedIndex, index);
-    const end = Math.max(focusedIndex, index);
-    const rangeIds = allItems.slice(start, end + 1).map((i) => i.id);
-    updateSelection(
-      Array.from(new Set([...selectedIds, ...rangeIds])),
-      index
-    );
-  } else if (e.metaKey || e.ctrlKey) {
-    // Ctrl/Cmd click: toggle selection
-    if (selectedIds.includes(item.id)) {
-      updateSelection(selectedIds.filter((id) => id !== item.id), index);
+  const handleItemClick = (e, item, index) => {
+    if (e.shiftKey && focusedIndex !== null) {
+      // Shift + click: select range
+      const start = Math.min(focusedIndex, index);
+      const end = Math.max(focusedIndex, index);
+      const rangeIds = allItems.slice(start, end + 1).map((i) => i.id);
+      updateSelection(
+        Array.from(new Set([...selectedIds, ...rangeIds])),
+        index
+      );
+    } else if (e.metaKey || e.ctrlKey) {
+      // Ctrl/Cmd click: toggle selection
+      if (selectedIds.includes(item.id)) {
+        updateSelection(
+          selectedIds.filter((id) => id !== item.id),
+          index
+        );
+      } else {
+        updateSelection([...selectedIds, item.id], index);
+      }
     } else {
-      updateSelection([...selectedIds, item.id], index);
+      // Single click: toggle selection for the clicked item
+      if (selectedIds.includes(item.id)) {
+        updateSelection([]); // deselect if already selected
+      } else {
+        updateSelection([item.id], index); // select this item only
+      }
     }
-  } else {
-    // Single click: toggle selection for the clicked item
-    if (selectedIds.includes(item.id)) {
-      updateSelection([]); // deselect if already selected
-    } else {
-      updateSelection([item.id], index); // select this item only
-    }
-  }
-};
+  };
+
+  const handleDownloadSelected = async () => {
+    setShowDownloadDialog(true);
+
+    const zip = new JSZip();
+
+    const addFolderToZip = (folder, zipFolder) => {
+      console.log(folder, "SELECTEDIDS1");
+      folder.files?.forEach((file) => {
+        zipFolder.file(file.name, `Dummy content of ${file.name}`);
+      });
+      folder.children?.forEach((childFolder) => {
+        const childZip = zipFolder.folder(childFolder.name);
+        addFolderToZip(childFolder, childZip);
+      });
+    };
+    // recursively find folder by id
+    const findFolderById = (folders, id) => {
+      for (const folder of folders) {
+        if (folder.id === id) return folder;
+        if (folder.children && folder.children.length > 0) {
+          const found = findFolderById(folder.children, id);
+          if (found) return found;
+        }
+      }
+      return null;
+    };
+
+    console.log(selectedIds, "SELECTEDIDS");
+    selectedIds.forEach((id) => {
+      const folder = findFolderById(folders, id);
+      if (folder) {
+        const zipFolder = zip.folder(folder.name);
+        addFolderToZip(folder, zipFolder);
+      } else {
+        let file = filesInitial.find((f) => f.id === id);
+        if (!file && activeFolder) {
+          file = activeFolder.files.find((f) => f.id === id);
+        }
+        if (file) {
+          zip.file(file.name, `Dummy content of ${file.name}`);
+        }
+      }
+    });
+
+    const blob = await zip.generateAsync({ type: "blob" });
+    saveAs(blob, `Selected_Items.zip`);
+
+    setShowDownloadDialog(false); // close after download finishes
+  };
+
+  const handleDeleteSelected = () => {
+    setShowDeleteDialog(true);
+  };
+
+  const handleConfirmDelete = () => {
+    let updatedFolders = folders;
+    let updatedFiles = filesInitial;
+
+    selectedIds.forEach((id) => {
+      // Delete folder
+      if (folders.some((f) => f.id === id)) {
+        updatedFolders = handleDeleteFolder(updatedFolders, id);
+      } else {
+        // Delete file from root
+        updatedFiles = updatedFiles.filter((f) => f.id !== id);
+        // Delete file from active folder
+        if (activeFolder) {
+          updatedFolders = updateFolderWithFiles(
+            updatedFolders,
+            activeFolder.id,
+            activeFolder.files.filter((f) => f.id !== id)
+          );
+        }
+      }
+    });
+
+    setFolders(updatedFolders);
+    setFilesIntial(updatedFiles);
+    setSelectedIds([]);
+    setShowDeleteDialog(false); // close dialog
+  };
 
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -436,6 +672,37 @@ const handleItemClick = (e, item, index) => {
     }
   }, [folders, activeFolder, dispatch]);
 
+  function DownloadDialog({ open, message }) {
+    return (
+      <Dialog open={open}>
+        <DialogTitle>Download</DialogTitle>
+        <DialogContent
+          style={{ display: "flex", alignItems: "center", gap: "10px" }}
+        >
+          <CircularProgress size={24} />
+          <span>{message}</span>
+        </DialogContent>
+      </Dialog>
+    );
+  }
+
+  function DeleteDialog({ open, onClose, onConfirm, selectedItems }) {
+    return (
+      <Dialog open={open} onClose={onClose}>
+        <DialogTitle>Delete Confirmation</DialogTitle>
+        <DialogContent>
+          Are you sure you want to delete <b>{selectedItems.length}</b> item(s)?
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={onClose}>Cancel</Button>
+          <Button color="error" onClick={onConfirm}>
+            Delete
+          </Button>
+        </DialogActions>
+      </Dialog>
+    );
+  }
+
   return (
     <div className="p-4 ">
       <input
@@ -489,13 +756,23 @@ const handleItemClick = (e, item, index) => {
             </Typography>
 
             <Box display="flex" alignItems="center" gap={0.5}>
-              <IconButton size="small">
+              <IconButton size="small" onClick={handleDownloadSelected}>
                 <Download fontSize="small" />
               </IconButton>
-              <IconButton size="small">
+
+              <IconButton
+                size="small"
+                onClick={handleMoveClick}
+                disabled={selectedIds.every((id) => {
+                  const item = allItems.find((i) => i.id === id);
+                  console.log(item, "ITEM");
+                  return item?.isExpanded; // disable if all areders fol
+                })}
+              >
                 <DriveFileMove fontSize="small" />
               </IconButton>
-              <IconButton size="small">
+
+              <IconButton size="small" onClick={handleDeleteSelected}>
                 <Delete fontSize="small" />
               </IconButton>
             </Box>
@@ -769,7 +1046,7 @@ const handleItemClick = (e, item, index) => {
         onHide={() => dispatch(setShowAddFolderModal(false))}
         centered
         dialogClassName="custom-modal"
-        sx={{borderRadius:"12px !important"}}
+        sx={{ borderRadius: "12px !important" }}
       >
         <Modal.Header style={{ borderBottom: "none", padding: "1rem 1.5rem" }}>
           <Modal.Title style={{ fontWeight: "500", fontSize: "1.25rem" }}>
@@ -790,7 +1067,7 @@ const handleItemClick = (e, item, index) => {
               padding: "0.5rem 0.75rem",
               fontSize: "1rem",
               outline: "none",
-              backgroundColor:'#f8fafc'
+              backgroundColor: "#f8fafc",
             }}
           />
         </Modal.Body>
@@ -916,6 +1193,22 @@ const handleItemClick = (e, item, index) => {
           </Button>
         </DialogActions>
       </Dialog>
+      <DeleteDialog
+        open={showDeleteDialog}
+        onClose={() => setShowDeleteDialog(false)}
+        onConfirm={handleConfirmDelete}
+        selectedItems={selectedIds}
+      />
+      <DownloadDialog
+        open={showDownloadDialog}
+        message="Preparing your download..."
+      />
+      <MoveDialog
+        open={showMoveDialog}
+        onClose={() => setShowMoveDialog(false)}
+        onConfirm={handleConfirmMove}
+        folders={folders}
+      />
     </div>
   );
 };
