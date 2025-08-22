@@ -14,6 +14,7 @@ import {
   TableContainer,
   TableHead,
   TableRow,
+  Chip
 } from "@mui/material";
 import { Close, Send, SmartToy } from "@mui/icons-material";
 import { motion } from "framer-motion";
@@ -182,12 +183,14 @@ const ChatWidget = () => {
     setMessages((prev) => [...prev, userMsg]);
     setInputValue("");
     setIsTyping(true);
-
+    const resultCount = sampleResponse.top_results.length;
     // simulate bot reply after 1s
     setTimeout(() => {
       const botMsg = {
         id: (Date.now() + 1).toString(),
-        text: `I found ${sampleResponse.top_results.length} documents.`,
+        text: `I found ${resultCount} document${
+                  resultCount === 1 ? "" : "s"
+                } that might be relevant to your query.`,
         results: sampleResponse.top_results,
         isUser: false,
         tableData: dummyBotResponse.table_data,
@@ -262,7 +265,7 @@ const ChatWidget = () => {
               {/* Left side: Chat area */}
               <Box
                 sx={{
-                  flex: 2,
+                  flex: 1,
                   display: "flex",
                   flexDirection: "column",
                   bgcolor: "#f9fafb",
@@ -284,7 +287,7 @@ const ChatWidget = () => {
                             color: msg.isUser ? "white" : "black",
                             p: 1.5,
                             borderRadius: 2,
-                            maxWidth: "50%",
+                            maxWidth: "70%",
                             whiteSpace: "pre-wrap",
                           }}
                         >
@@ -469,14 +472,24 @@ const ChatWidget = () => {
                     >
                       {messages[messages.length - 1].followupQuestions.map(
                         (s, i) => (
-                          <Button
+                          <Chip
                             key={i}
+                            label={s}
+                            onClick={() => handleSuggestionClick(s)}
                             size="small"
                             variant="outlined"
-                            onClick={() => handleSuggestionClick(s)}
-                          >
-                            {s}
-                          </Button>
+                            sx={{
+                              fontSize: '0.8rem',
+                              fontWeight: '500',
+                              height: '24px',
+                              borderRadius: '12px',
+                              color: '#3b54b0',
+                              borderColor: '#3b54b040',
+                              '&:hover': {
+                                backgroundColor: '#3b54b010',
+                              }
+                            }}
+                          />
                         )
                       )}
                     </Box>
@@ -486,30 +499,36 @@ const ChatWidget = () => {
                 <Box
                   sx={{
                     display: "flex",
-                    p: 2,
+                    alignItems: "center",
+                    p: 1, 
                     borderTop: "1px solid #ccc",
                     bgcolor: "white",
                   }}
                 >
                   <TextField
+                    size="small"
                     fullWidth
-                    placeholder="Type your message..."
+                    placeholder="Type Your Query..."
                     value={inputValue}
                     onChange={(e) => setInputValue(e.target.value)}
                     onKeyDown={(e) => e.key === "Enter" && handleSendMessage()}
                   />
-                  <Button
-                    variant="contained"
+                  <IconButton
                     onClick={handleSendMessage}
                     disabled={!inputValue.trim()}
-                    sx={{ ml: 1, bgcolor: "#3b54b0" }}
+                    sx={{
+                      ml: 1,
+                      bgcolor: "#3b54b0",
+                      "&:hover": {
+                        bgcolor: "#2a3c82",
+                      }
+                    }}
                   >
-                    <Send />
-                  </Button>
+                    <Send sx={{ fontSize: 20 }} />
+                  </IconButton>
                 </Box>
               </Box>
 
-              {/* Right side: Preview */}
               {/* Right side: File Preview */}
               <Box
                 sx={{
