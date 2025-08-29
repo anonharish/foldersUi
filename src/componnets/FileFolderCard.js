@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Card,
   CardContent,
@@ -44,6 +44,7 @@ const FileFolderCard = ({
          onDownload, 
          handleStarredClick ,
           onDoubleClick,
+          starredTrue,
   isSelected}) => {
   const [anchorEl, setAnchorEl] = useState(null);
   const [hovered, setHovered] = useState(false);
@@ -59,6 +60,12 @@ const FileFolderCard = ({
   const handleMenuClose = () => setAnchorEl(null);
 
   const isFolder = type === "folder";
+
+  useEffect(()=>{
+        if(starredTrue){
+      setIsStarred(true)
+    }
+  },[starredTrue])
 
   const handleStarToggle = (e) => {
     e.stopPropagation();

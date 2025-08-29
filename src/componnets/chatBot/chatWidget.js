@@ -256,7 +256,7 @@ const ChatWidget = () => {
               }}
             >
               <Avatar sx={{ bgcolor: "#ea641f", width: 40, height: 40 }}>
-                <SupportAgent />
+                 <Bot/>
               </Avatar>
               <Typography variant="subtitle1" fontWeight={600} ml={2}>
                 AI Document Search
