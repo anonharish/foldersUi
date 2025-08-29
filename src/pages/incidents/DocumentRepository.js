@@ -332,58 +332,86 @@ const handleFileUpload = (event) => {
     }
   };
 
-  const handleDownloadSelected = async () => {
-    setShowDownloadDialog(true);
+const handleDownloadSelected = async () => {
+  setShowDownloadDialog(true);
 
-    const zip = new JSZip();
+  const zip = new JSZip();
 
-    const addFolderToZip = (folder, zipFolder) => {
-      folder.files?.forEach((file) => {
-        zipFolder.file(file.name, `Dummy content of ${file.name}`);
-      });
-      folder.children?.forEach((childFolder) => {
-        const childZip = zipFolder.folder(childFolder.name);
-        addFolderToZip(childFolder, childZip);
-      });
-    };
-    const findFolderById = (foldersData, id) => {
-      const list = Array.isArray(foldersData)
-        ? foldersData
-        : foldersData.folders;
+  // Recursive function to add folders and files
+  const addFolderToZip = async (folder, zipFolder) => {
+    // Add files in the current folder
+    if (folder.files) {
+      for (const file of folder.files) {
+        let content;
 
-      if (!Array.isArray(list)) return null;
-
-      for (const folder of list) {
-        if (folder.id === id) return folder;
-
-        if (Array.isArray(folder.children) && folder.children.length > 0) {
-          const found = findFolderById(folder.children, id);
-          if (found) return found;
+        if (file.content) {
+          // If file.content exists (Blob, ArrayBuffer, or string)
+          content = file.content;
+        } else if (file.url) {
+          // If file has a URL, fetch it
+          const res = await fetch(file.url);
+          content = await res.blob();
+        } else {
+          // fallback dummy text if nothing exists
+          content = `Dummy content of ${file.name}`;
         }
+
+        zipFolder.file(file.name, content);
       }
+    }
 
-      return null;
-    };
-
-    selectedIds.forEach((id) => {
-      const folder = findFolderById(folders, id);
-      if (folder) {
-        const zipFolder = zip.folder(folder.name);
-        addFolderToZip(folder, zipFolder);
-      } else {
-        let file = filesInitial.find((f) => f.id === id);
-        if (!file && activeFolder) {
-          file = activeFolder.files.find((f) => f.id === id);
-        }
-        if (file) {
-          zip.file(file.name, `Dummy content of ${file.name}`);
-        }
+    // Recursively add child folders
+    if (folder.children) {
+      for (const child of folder.children) {
+        const childZip = zipFolder.folder(child.name);
+        await addFolderToZip(child, childZip);
       }
-    });
-    const blob = await zip.generateAsync({ type: "blob" });
-    saveAs(blob, `Selected_Items.zip`);
-    setShowDownloadDialog(false);
+    }
   };
+
+  // Recursive function to find a folder by ID
+  const findFolderById = (foldersData, id) => {
+    const list = Array.isArray(foldersData) ? foldersData : foldersData.folders;
+    if (!Array.isArray(list)) return null;
+
+    for (const folder of list) {
+      if (folder.id === id) return folder;
+      if (Array.isArray(folder.children) && folder.children.length > 0) {
+        const found = findFolderById(folder.children, id);
+        if (found) return found;
+      }
+    }
+    return null;
+  };
+
+  // Process selected IDs
+  for (const id of selectedIds) {
+    const folder = findFolderById(folders, id);
+    if (folder) {
+      const zipFolder = zip.folder(folder.name);
+      await addFolderToZip(folder, zipFolder);
+    } else {
+      let file = filesInitial.find(f => f.id === id) || activeFolder?.files.find(f => f.id === id);
+      if (file) {
+        let content;
+        if (file.content) content = file.content;
+        else if (file.url) {
+          const res = await fetch(file.url);
+          content = await res.blob();
+        } else {
+          content = `Dummy content of ${file.name}`;
+        }
+        zip.file(file.name, content);
+      }
+    }
+  }
+
+  // Generate the zip and download
+  const blob = await zip.generateAsync({ type: "blob" });
+  saveAs(blob, "Selected_Items.zip");
+  setShowDownloadDialog(false);
+};
+
 
   const handleDeleteSelected = () => {
     setShowDeleteDialog(true);
@@ -572,6 +600,7 @@ const addFolderToStructure = (structure, newFolder, parentId) => {
   };
 
   const handleViewClick = (file) => {
+    console.log(file,"FILES")
     setPreviewFile(file);
   };
 
@@ -579,9 +608,18 @@ const addFolderToStructure = (structure, newFolder, parentId) => {
     setPreviewFile(null);
   };
 
-  const handleDownloadClick = (file) => {
-    console.log("Downloading file:", file.name);
-  };
+const handleDownloadClick = (file) => {
+  console.log("Downloading file:", file.name);
+
+  // Create an invisible link element
+  const link = document.createElement("a");
+  link.href = file.url; // The file URL (PDF, DOCX, XLSX etc.)
+  link.download = file.name; // Suggested download file name
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+};
+
 
   const handleRenameFolder = (folders, folderId, newName) => {
     return folders.map((folder) => {
@@ -607,25 +645,49 @@ const addFolderToStructure = (structure, newFolder, parentId) => {
         children: handleDeleteFolder(folder.children || [], folderId),
       }));
   };
-  const handleDownloadFolder = async (folder) => {
-    const zip = new JSZip();
 
-    const addFilesToZip = (currentFolder, zipFolder) => {
-      currentFolder.files?.forEach((file) => {
-        zipFolder.file(file.name, `Dummy content of ${file.name}`);
-      });
+// utility to clean the folder name
+const sanitizeFileName = (name) => {
+  console.log(name,"NAMEOFTHEFILE")
+  return name.replace(/[^\w\-]+/g, "_"); // replace spaces and special chars with "_"
+};
 
-      currentFolder.children?.forEach((childFolder) => {
+const handleDownloadFolder = async (folder) => {
+  const zip = new JSZip();
+console.log(folder,"NAMEOFTHEFILE3")
+  const addFilesToZip = async (currentFolder, zipFolder) => {
+    if (currentFolder.files) {
+      for (const file of currentFolder.files) {
+        try {
+          const response = await fetch(file.url);
+          const arrayBuffer = await response.arrayBuffer();
+          zipFolder.file(file.name, arrayBuffer, { binary: true });
+        } catch (err) {
+          console.error("Error fetching file:", file.name, err);
+        }
+      }
+    }
+
+    if (currentFolder.children) {
+      for (const childFolder of currentFolder.children) {
         const childZip = zipFolder.folder(childFolder.name);
-        addFilesToZip(childFolder, childZip);
-      });
-    };
-
-    addFilesToZip(folder, zip);
-
-    const blob = await zip.generateAsync({ type: "blob" });
-    saveAs(blob, `${folder.name}.zip`);
+        await addFilesToZip(childFolder, childZip);
+      }
+    }
   };
+
+  await addFilesToZip(folder, zip);
+console.log(folder,"NAMEOFTHEFILE2")
+  // sanitize the zip name
+  const safeName = sanitizeFileName(folder.name);
+console.log(safeName,folder,"NAMEOFTHEFILE1")
+  const blob = await zip.generateAsync({ type: "blob" });
+  saveAs(blob, `${safeName}.zip`);
+};
+
+
+
+
 
   return (
     <div className="p-4 ">
@@ -882,6 +944,7 @@ const addFolderToStructure = (structure, newFolder, parentId) => {
                   size={`${Math.round(file.size / 1024)} KB`}
                   date={new Date(file.uploadedAt).toLocaleDateString()}
                   typeofFile={file.typeofFile}
+                  handleViewClick={() => handleViewClick(file)}
                   onRename={(newName) => {
                     const updatedFolders = handleRename(
                       folders?.folders,

@@ -106,7 +106,7 @@ const FileFolderCard = ({
     }
   };
 
-  const MAX_LENGTH = 15; 
+  const MAX_LENGTH = 10; 
 
   return (
     <>
@@ -225,6 +225,7 @@ const FileFolderCard = ({
               onClick={(e) => {
                 e.stopPropagation();
                 handleMenuClose();
+                console.log("View",handleViewClick)
                 if (handleViewClick) handleViewClick();
               }}
             >
@@ -239,7 +240,8 @@ const FileFolderCard = ({
               onClick={(e) => {
                 e.stopPropagation();
                 handleMenuClose();
-                if (onDownload) onDownload();
+                if (onDownload && isFolder) onDownload();
+                if(handleDownloadClick && !isFolder) handleDownloadClick();
               }}
             >
               <ListItemIcon>

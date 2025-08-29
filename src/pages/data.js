@@ -1,192 +1,154 @@
 export const initialFolders = {
-    folders: [
+  folders: [
+    {
+      id: "1",
+      name: "Policies",
+      files: [
         {
-            id: "1",
-            name: "Documents",
-            files: [
-                {
-                    id: "file1",
-                    name: "ProjectProposal.pdf",
-                    size: 1024,
-                    type: "application/msword",
-                    uploadedAt: new Date().toISOString(),
-                    url: "#",
-                    typeofFile: "pdf",
-                },
-            ],
-            children: [
-                {
-                    id: "1-1",
-                    name: "Invoices",
-                    files: [
-                        {
-                            id: "file7",
-                            name: "Invoice-Jan.pdf",
-                            size: 800,
-                            type: "application/pdf",
-                            uploadedAt: new Date().toISOString(),
-                            url: "#",
-                            typeofFile: "invoicepdf",
-                        },
-                    ],
-                    children: [
-                        {
-                            id: "1-1-1",
-                            name: "2024",
-                            files: [
-                                {
-                                    id: "file8",
-                                    name: "Invoice-Feb.pdf",
-                                    size: 850,
-                                    type: "application/pdf",
-                                    uploadedAt: new Date().toISOString(),
-                                    url: "#",
-                                    typeofFile: "invoicepdf",
-                                },
-                            ],
-                            children: [
-                                {
-                                    id: "1-1-1-1",
-                                    name: "March",
-                                    files: [
-                                        {
-                                            id: "file9",
-                                            name: "Invoice-Mar.pdf",
-                                            size: 900,
-                                            type: "application/pdf",
-                                            uploadedAt: new Date().toISOString(),
-                                            url: "#",
-                                            typeofFile: "invoicepdf",
-                                        },
-                                    ],
-                                    children: [
-                                        {
-                                            id: "1-1-1-1-1",
-                                            name: "April",
-                                            // files: [
-                                            //     {
-                                            //     id: "file10",
-                                            //     name: "Invoice-Apr.pdf",
-                                            //     size: 950,
-                                            //     type: "application/pdf",
-                                            //     uploadedAt: new Date().toISOString(),
-                                            //     url: "#",
-                                            //     typeofFile: "invoicepdf",
-                                            //     },
-                                            // ],
-                                            children: [
-                                                {
-                                                    id: "1-1-1-1-1-1",
-                                                    name: "Week 1",
-                                                    files: [
-                                                        {
-                                                            id: "file11",
-                                                            name: "Invoice-Apr-Week1.pdf",
-                                                            size: 300,
-                                                            type: "application/pdf",
-                                                            uploadedAt: new Date().toISOString(),
-                                                            url: "#",
-                                                            typeofFile: "invoicepdf",
-                                                        },
-                                                    ],
-                                                    children: [
-                                                        {
-                                                            id: "1-1-1-1-1-1-1",
-                                                            name: "Day 1",
-                                                            files: [
-                                                                {
-                                                                    id: "file13",
-                                                                    name: "Invoice-Apr-Week1-Day1.pdf",
-                                                                    size: 150,
-                                                                    type: "application/pdf",
-                                                                    uploadedAt: new Date().toISOString(),
-                                                                    url: "#",
-                                                                    typeofFile: "invoicepdf",
-                                                                },
-                                                            ],
-                                                            children: [],
-                                                            parentId: "1-1-1-1-1-1",
-                                                            isExpanded: true,
-                                                        }
-                                                    ],
-                                                    parentId: "1-1-1-1-1",
-                                                    isExpanded: true,
-                                                },
-                                                {
-                                                    id: "1-1-1-1-1-2",
-                                                    name: "Week 2",
-                                                    files: [
-                                                        {
-                                                            id: "file12",
-                                                            name: "Invoice-Apr-Week2.pdf",
-                                                            size: 320,
-                                                            type: "application/pdf",
-                                                            uploadedAt: new Date().toISOString(),
-                                                            url: "#",
-                                                            typeofFile: "invoicepdf",
-                                                        },
-                                                    ],
-                                                    children: [],
-                                                    parentId: "1-1-1-1-1",
-                                                    isExpanded: true,
-                                                },
-                                            ],
-                                            parentId: "1-1-1-1",
-                                            isExpanded: true,
-                                        }
-                                    ],
-                                    parentId: "1-1-1",
-                                    isExpanded: true,
-                                },
-                            ],
-                            parentId: "1-1",
-                            isExpanded: true,
-                        },
-                    ],
-                     isExpanded: true,
-                    parentId: "1",
-                },
-            ],
-            parentId: null,
-            isExpanded: true,
+          id: "file1",
+          name: "GovernmentGuaranteePolicy2022.pdf",
+          size: 1024,
+          type: "application/pdf",
+          uploadedAt: new Date().toISOString(),
+          url: "/files/Government Guarantee Policy.pdf",
+          typeofFile: "pdf",
         },
+      ],
+      children: [
         {
-            id: "2",
-            name: "Reports",
-            files: [
-                {
-                    id: "file4",
-                    name: "AnnualReport2024.pdf",
-                    size: 1024,
-                    type: "application/pdf",
-                    uploadedAt: new Date().toISOString(),
-                    url: "#",
-                    typeofFile: "pdf",
-                },
-            ],
-            parentId: null,
-            isExpanded: true,
+          id: "1-1",
+          name: "Archived Policies",
+          files: [
+            {
+              id: "file3",
+              name: "OldPolicyCircular2018.pdf",
+              size: 600,
+              type: "application/pdf",
+              uploadedAt: new Date().toISOString(),
+              url: "/files/old_policy_circular.pdf",
+              typeofFile: "pdf",
+            },
+          ],
+          children: [],
+          parentId: "1",
+          isExpanded: true,
         },
-    ],
+      ],
+      parentId: null,
+      isExpanded: true,
+    },
+    {
+      id: "2",
+      name: "Guidelines",
+      files: [
+        {
+          id: "file4",
+          name: "GIGW_Guidelines.pdf",
+          size: 1200,
+          type: "application/pdf",
+          uploadedAt: new Date().toISOString(),
+          url: "/files/Guidelines_for_Government_websites.pdf",
+          typeofFile: "pdf",
+        },
+      ],
+      children: [
+        {
+          id: "2-1",
+          name: "Implementation Guides",
+          files: [
+            {
+              id: "file6",
+              name: "CyberSecurityFramework.docx",
+              size: 700,
+              type: "application/msword",
+              uploadedAt: new Date().toISOString(),
+              url: "https://www.energy.gov/sites/default/files/2023-05/EXEC-2022-008113%20-%20Cybersecurity%20Plan%20Templates_High%20Risk.docx",
+              typeofFile: "doc",
+            },
+          ],
+          children: [],
+          parentId: "2",
+          isExpanded: true,
+        },
+      ],
+      parentId: null,
+      isExpanded: true,
+    },
+    {
+      id: "3",
+      name: "Circulars",
+      files: [
+        {
+          id: "file7",
+          name: "NDSAP Implementation Guidelines.pdf",
+          size: 500,
+          type: "application/pdf",
+          uploadedAt: new Date().toISOString(),
+          url: "/files/NDSAP Implementation Guidelines.pdf",
+          typeofFile: "pdf",
+        },
+      ],
+      children: [
+        {
+          id: "3-1",
+          name: "Nomination Templates",
+          files: [
+            {
+              id: "file8",
+              name: "Nomination_Letter_Template.docx",
+              size: 320,
+              type: "application/msword",
+              uploadedAt: new Date().toISOString(),
+              url: "https://doiu.doi.gov/whldpdocs/Sample_Supervisor_Nomination_Letter.docx",
+              typeofFile: "doc",
+            },
+          ],
+          children: [],
+          parentId: "3",
+          isExpanded: true,
+        },
+      ],
+      parentId: null,
+      isExpanded: true,
+    },
+  ],
 
-    files: [
-        {
-            id: "file100",
-            name: "SystemArchitecture.pdf",
-            size: 2048,
-            type: "application/pdf",
-            uploadedAt: new Date().toISOString(),
-            url: "#",
-            typeofFile: "pdf",
-        },
-        {
-            id: "file101",
-            name: "Readme.txt",
-            size: 300,
-            type: "text/plain",
-            uploadedAt: new Date().toISOString(),
-            url: "#",
-            typeofFile: "txt",
-        },
-    ],
+  files: [
+    {
+      id: "file100",
+      name: "Letter_of_DO.pdf",
+      size: 2048,
+      type: "application/pdf",
+      uploadedAt: new Date().toISOString(),
+      url: "/files/letter_of_do.pdf",
+      typeofFile: "pdf",
+    },
+    {
+      id: "file101",
+      name: "SRP_Upload_Template.xlsx",
+      size: 300,
+      type: "application/vnd.ms-excel",
+      uploadedAt: new Date().toISOString(),
+      url: `https://srp.fas.gsa.gov/portal/docs/FAS%20SRP%20Excel%20Upload%20Reporting%20Template%20v1.3.9.xlsx`,
+      typeofFile: "excel",
+    },
+    {
+      id: "file102",
+      name: "Readme.txt",
+      size: 450,
+      type: "text/plain",
+      uploadedAt: new Date().toISOString(),
+      url: "https://www1.ncdc.noaa.gov/pub/data/ghcn/daily/readme.txt",
+      typeofFile: "txt",
+    },
+     {
+      id: "file103",
+      name: "System-Design-Document.docx",
+      size: 450,
+      type: "application/msword",
+      uploadedAt: new Date().toISOString(),
+      url: "https://www.cms.gov/Research-Statistics-Data-and-Systems/CMS-Information-Technology/TLC/Downloads/System-Design-Document.docx",
+      typeofFile: "doc",
+    },
+  ],
 };
