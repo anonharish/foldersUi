@@ -7,52 +7,141 @@ const FileViewer = ({ document }) => {
     const [error, setError] = useState(false);
     const [retryCount, setRetryCount] = useState(0);
     const iframeRef = useRef(null);
+    const [currentViewerUrl, setCurrentViewerUrl] = useState('');
 
     useEffect(() => {
-        // Reset loading and error states when document changes
         setLoading(true);
         setError(false);
         setRetryCount(0);
+        
+        if (document) {
+            const viewerUrl = getViewerUrl(document.fileName);
+            setCurrentViewerUrl(viewerUrl || '');
+        }
     }, [document]);
+
+    useEffect(() => {
+        if (iframeRef.current && currentViewerUrl) {
+            const finalUrl = retryCount > 0 
+                ? `${currentViewerUrl}${currentViewerUrl.includes('?') ? '&' : '?'}retry=${Date.now()}`
+                : currentViewerUrl;
+            
+            iframeRef.current.src = finalUrl;
+        }
+    }, [currentViewerUrl, retryCount]);
 
     if (!document) return null;
 
-    const downloadFile = () => {
-        // Create a mapping of sample file URLs
-        const fileUrls = {
-            "ProjectPlan.pdf": "https://d1fpedukd3w7d8.cloudfront.net/files/project-plan.pdf",
-            "IncidentReport_July.docx": "https://calibre-ebook.com/downloads/demos/demo.docx",
-            "FinancialSummary.xlsx": "https://ou.edu/content/dam/cms/docs/sample-excel-file.xlsx",
-            "MeetingNotes_August.txt": "https://sample-files.com/downloads/documents/txt/simple.txt",
-            "UserGuide.pdf": "https://d1fpedukd3w7d8.cloudfront.net/files/project-plan.pdf"
-        };
-
-        const fileUrl = fileUrls[document.fileName] || "#";
-        window.open(fileUrl, '_blank');
+    const fileUrls = {
+        "GovernmentGuaranteePolicy2022.pdf": "/files/Government Guarantee Policy.pdf",
+        "GuaranteePolicy2022.pdf": "/files/Government Guarantee Policy.pdf",
+        "Policy2022.pdf": "/files/Government Guarantee Policy.pdf",
+        "2022PolicyGovt.pdf": "/files/Government Guarantee Policy.pdf",
+        "OldPolicyCircular2018.pdf": "/files/old_policy_circular.pdf",
+        "PolicyCircular2018.pdf": "/files/old_policy_circular.pdf",
+        "Circular2018.pdf": "/files/old_policy_circular.pdf",
+        "2018OldPolicy.pdf": "/files/old_policy_circular.pdf",
+        
+        // PDF files from Guidelines folder (local files)
+        "GIGW_Guidelines.pdf": "/files/Guidelines_for_Government_websites.pdf",
+        "Guidelines.pdf": "/files/Guidelines_for_Government_websites.pdf",
+        "Govt_guidelines.pdf": "/files/Guidelines_for_Government_websites.pdf",
+        "Website_guidelines.pdf": "/files/Guidelines_for_Government_websites.pdf",
+        
+        // PDF files from Circulars folder (local files)
+        "NDSAP Implementation Guidelines.pdf": "/files/NDSAP Implementation Guidelines.pdf",
+        "Implementation Guidelines.pdf": "/files/NDSAP Implementation Guidelines.pdf",
+        "Guidelines.pdf": "/files/NDSAP Implementation Guidelines.pdf",
+        "NDSAP.pdf": "/files/NDSAP Implementation Guidelines.pdf",
+        
+        // DOCX files from Implementation Guides (external URLs)
+        "CyberSecurityFramework.docx": "https://www.energy.gov/sites/default/files/2023-05/EXEC-2022-008113%20-%20Cybersecurity%20Plan%20Templates_High%20Risk.docx",
+        "SecurityFramework.docx": "https://www.energy.gov/sites/default/files/2023-05/EXEC-2022-008113%20-%20Cybersecurity%20Plan%20Templates_High%20Risk.docx",
+        "Framework.docx": "https://www.energy.gov/sites/default/files/2023-05/EXEC-2022-008113%20-%20Cybersecurity%20Plan%20Templates_High%20Risk.docx",
+        "WorkCyber.docx": "https://www.energy.gov/sites/default/files/2023-05/EXEC-2022-008113%20-%20Cybersecurity%20Plan%20Templates_High%20Risk.docx",
+        
+        // DOCX files from Nomination Templates (external URLs)
+        "Nomination_Letter_Template.docx": "https://doiu.doi.gov/whldpdocs/Sample_Supervisor_Nomination_Letter.docx",
+        "Letter_Template.docx": "https://doiu.doi.gov/whldpdocs/Sample_Supervisor_Nomination_Letter.docx",
+        "Template.docx": "https://doiu.doi.gov/whldpdocs/Sample_Supervisor_Nomination_Letter.docx",
+        "Nomination.docx": "https://doiu.doi.gov/whldpdocs/Sample_Supervisor_Nomination_Letter.docx",
+        
+        // Root level files
+        "Letter_of_DO.pdf": "/files/letter_of_do.pdf", // Local PDF
+        "SRP_Upload_Template.xlsx": "https://srp.fas.gsa.gov/portal/docs/FAS%20SRP%20Excel%20Upload%20Reporting%20Template%20v1.3.9.xlsx", // External Excel
+        "Readme.txt": "https://www1.ncdc.noaa.gov/pub/data/ghcn/daily/readme.txt", // External Text
+        "System-Design-Document.docx": "https://www.cms.gov/Research-Statistics-Data-and-Systems/CMS-Information-Technology/TLC/Downloads/System-Design-Document.docx" // External DOCX
     };
+
+    const downloadFile = () => {
+    const fileUrl = fileUrls[document.fileName] || "#";
+    const fileName = document.fileName;
+    const extension = fileName.split('.').pop().toLowerCase();
+    
+    if (fileUrl.startsWith('/')) {
+        const link = window.document.createElement('a');
+        link.href = fileUrl;
+        link.download = fileName;
+        window.document.body.appendChild(link);
+        link.click();
+        window.document.body.removeChild(link);
+    } 
+    else if (extension === 'txt') {
+        window.open(fileUrl, '_blank');
+    }
+    else {
+        fetch(fileUrl)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.blob();
+            })
+            .then(blob => {
+                // Create blob URL and trigger download
+                const blobUrl = window.URL.createObjectURL(blob);
+                const link = window.document.createElement('a');
+                link.href = blobUrl;
+                link.download = fileName;
+                window.document.body.appendChild(link);
+                link.click();
+                
+                // Clean up
+                window.URL.revokeObjectURL(blobUrl);
+                window.document.body.removeChild(link);
+            })
+            .catch(error => {
+                console.error('Download failed:', error);
+                // Fallback: open in new tab if download fails
+                window.open(fileUrl, '_blank');
+            });
+    }
+};
 
     const retryLoad = () => {
         setLoading(true);
         setError(false);
         setRetryCount(prev => prev + 1);
-        
-        // Force reload the iframe after a short delay
-        setTimeout(() => {
-            if (iframeRef.current) {
-                // Force reload by adding a timestamp parameter to bypass cache
-                const currentSrc = iframeRef.current.src;
-                const separator = currentSrc.includes('?') ? '&' : '?';
-                iframeRef.current.src = currentSrc + separator + 'retry=' + Date.now();
-            }
-        }, 100);
     };
 
-    const sampleFileUrls = {
-        "ProjectPlan.pdf": "https://docs.google.com/gview?url=https://d1fpedukd3w7d8.cloudfront.net/files/project-plan.pdf&embedded=true",
-        "IncidentReport_July.docx": "https://calibre-ebook.com/downloads/demos/demo.docx",
-        "FinancialSummary.xlsx": "https://ou.edu/content/dam/cms/docs/sample-excel-file.xlsx",
-        "MeetingNotes_August.txt": "https://docs.google.com/gview?url=https://sample-files.com/downloads/documents/txt/simple.txt&embedded=true",
-        "UserGuide.pdf": "https://docs.google.com/gview?url=https://d1fpedukd3w7d8.cloudfront.net/files/project-plan.pdf&embedded=true"
+    const getViewerUrl = (fileName) => {
+        const extension = fileName.split('.').pop().toLowerCase();
+        const fileUrl = fileUrls[fileName] || "#";
+        
+        if (extension === 'pdf') {
+            // For local PDF files, serve them directly (they're in public/files folder)
+            return fileUrl;
+        } else if (['doc', 'docx'].includes(extension)) {
+            // Use Microsoft Office Online Viewer for Word documents
+            return `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(fileUrl)}`;
+        } else if (['xls', 'xlsx'].includes(extension)) {
+            // Use Microsoft Office Online Viewer for Excel files
+            return `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(fileUrl)}`;
+        } else if (extension === 'txt') {
+            // Use Google Docs viewer for text files
+            return `https://docs.google.com/gview?url=${encodeURIComponent(fileUrl)}&embedded=true`;
+        }
+        return null;
     };
 
     const handleIframeLoad = () => {
@@ -65,10 +154,7 @@ const FileViewer = ({ document }) => {
         setError(true);
     };
 
-    const renderIframeViewer = (url) => {
-        // Add cache-busting parameter for retries
-        const finalUrl = retryCount > 0 ? `${url}&retry=${Date.now()}` : url;
-        
+    const renderIframeViewer = () => {
         return (
             <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
@@ -122,7 +208,6 @@ const FileViewer = ({ document }) => {
                 }}>
                     <iframe
                         ref={iframeRef}
-                        src={finalUrl}
                         style={{ width: '100%', height: '100%', border: 'none' }}
                         title={document.fileName}
                         onLoad={handleIframeLoad}
@@ -134,22 +219,11 @@ const FileViewer = ({ document }) => {
         );
     };
 
-    const renderOfficeViewer = () => {
-        // Use Microsoft Office Online Viewer for Office files
-        const officeViewerUrl = `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(sampleFileUrls[document.fileName])}`;
-        return renderIframeViewer(officeViewerUrl);
-    };
-
     const extension = document.fileName.split('.').pop().toLowerCase();
+    const viewerUrl = getViewerUrl(document.fileName);
 
-    if (extension === 'pdf') {
-        return renderIframeViewer(sampleFileUrls[document.fileName]);
-    } else if (['doc', 'docx'].includes(extension)) {
-        return renderOfficeViewer();
-    } else if (['xls', 'xlsx'].includes(extension)) {
-        return renderOfficeViewer();
-    } else if (extension === 'txt') {
-        return renderIframeViewer(sampleFileUrls[document.fileName]);
+    if (viewerUrl) {
+        return renderIframeViewer();
     } else {
         return (
             <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center' }}>

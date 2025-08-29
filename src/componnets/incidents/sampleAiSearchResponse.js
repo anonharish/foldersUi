@@ -3,35 +3,80 @@ export const sampleResponse = {
   top_results: [
     {
       id: "doc_1",
-      fileName: "ProjectPlan.pdf",
-      content:
-        "This document contains the full project plan, milestones, and deadlines for the upcoming release scheduled in Q3.",
+      fileName: "GovernmentGuaranteePolicy2022.pdf",
+      content: "Government guarantee policy document outlining the framework and procedures for financial guarantees provided by government entities in 2022."
     },
     {
       id: "doc_2",
-      fileName: "IncidentReport_July.docx",
-      content:
-        "Incident report regarding system downtime on July 10th, including root cause analysis and corrective actions.",
+      fileName: "GuaranteePolicy2022.pdf",
+      content: "Comprehensive policy document detailing guarantee procedures and risk assessment methodologies for government-backed financial instruments."
     },
     {
       id: "doc_3",
-      fileName: "FinancialSummary.xlsx",
-      content:
-        "Q2 financial summary showing revenue growth, expenses, and forecast for the next quarter.",
+      fileName: "Policy2022.pdf",
+      content: "General policy framework document covering various government initiatives and regulatory updates for the year 2022."
     },
     {
       id: "doc_4",
-      fileName: "MeetingNotes_August.txt",
-      content:
-        "Notes from the August strategy meeting covering new product features and market expansion strategy.",
+      fileName: "2022PolicyGovt.pdf",
+      content: "Official government policy document outlining strategic directions and operational guidelines for various departments in 2022."
     },
     {
       id: "doc_5",
-      fileName: "UserGuide.pdf",
-      content:
-        "The official user guide with instructions, troubleshooting steps, and FAQs for new employees.",
+      fileName: "OldPolicyCircular2018.pdf",
+      content: "Archived policy circular from 2018 containing previous guidelines and procedures that have been superseded by newer versions."
     },
-  ],
+    {
+      id: "doc_6",
+      fileName: "PolicyCircular2018.pdf",
+      content: "Policy circular document from 2018 detailing administrative procedures and compliance requirements for government agencies."
+    },
+    {
+      id: "doc_7",
+      fileName: "Circular2018.pdf",
+      content: "Official circular memorandum containing directives and operational updates issued in 2018 for government departments."
+    },
+    {
+      id: "doc_8",
+      fileName: "2018OldPolicy.pdf",
+      content: "Legacy policy document from 2018 outlining previous regulatory frameworks and compliance standards."
+    },
+    {
+      id: "doc_9",
+      fileName: "GIGW_Guidelines.pdf",
+      content: "Guidelines for Indian Government Websites (GIGW) document containing standards and best practices for government web portals."
+    },
+    {
+      id: "doc_10",
+      fileName: "Guidelines.pdf",
+      content: "General guidelines document outlining standard operating procedures and compliance requirements for government initiatives."
+    },
+    {
+      id: "doc_11",
+      fileName: "Govt_guidelines.pdf",
+      content: "Government guidelines document providing framework for implementation of various programs and services."
+    },
+    {
+      id: "doc_12",
+      fileName: "Website_guidelines.pdf",
+      content: "Comprehensive guidelines for website development and maintenance, including accessibility standards and security protocols."
+    },
+    {
+      id: "doc_13",
+      fileName: "CyberSecurityFramework.docx",
+      content: "Cybersecurity framework document outlining risk management strategies, security controls, and incident response procedures."
+    },
+    {
+      id: "doc_14",
+      fileName: "SecurityFramework.docx",
+      content: "Security framework document detailing protective measures, monitoring protocols, and compliance requirements for IT systems."
+    },
+    {
+      id: "doc_15",
+      fileName: "Framework.docx",
+      content: "Comprehensive framework document providing structural guidelines and implementation methodologies for various initiatives."
+    },
+  ]
 };
 
 

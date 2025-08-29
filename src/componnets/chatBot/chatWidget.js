@@ -31,6 +31,7 @@ import FloatingChatIcon from "./FloatChatBot";
 import { sampleResponse } from "../incidents/sampleAiSearchResponse";
 import FileViewer from "./FileViewer";
 import { Bot } from "lucide-react";
+import axios from "axios";
 
 const dummyBotResponse = {
   answer: "Here is a dummy response with table and suggestions.",
@@ -42,7 +43,7 @@ const dummyBotResponse = {
   followupQuestions: [
     "Show me more matching files",
     "Tell me, which date the files are uploaded?",
-    "Give me Summary of ProjectPlan.pdf file",
+    "Give me Summary of the Framwork.docx file",
   ],
   dashboard: [], // you can keep empty for now
 };
@@ -179,7 +180,7 @@ const ChatWidget = () => {
     setSelectedDoc(null);
   };
 
-  const handleSendMessage = (text = null) => {
+  const handleSendMessage = async (text = null) => {
     const messageText = text || inputValue.trim();
     if (!messageText) return;
 
@@ -193,24 +194,43 @@ const ChatWidget = () => {
     setMessages((prev) => [...prev, userMsg]);
     setInputValue("");
     setIsTyping(true);
-    const resultCount = sampleResponse.top_results.length;
-    // simulate bot reply after 1s
-    setTimeout(() => {
+    try {
+      const response = await axios.get(
+        `http://localhost:8084/iassure/api/incident/search`,
+        {
+          params: { query: encodeURIComponent(messageText) },
+          headers: { "Content-Type": "application/json" },
+        }
+      );
+
+      // const response = { data: sampleResponse }; // Use mock response for now
+      // console.log("API Response:", response);
+      const resultCount = response.data.top_results?.length || 0;
       const botMsg = {
         id: (Date.now() + 1).toString(),
-        text: `I found ${resultCount} document${
-                  resultCount === 1 ? "" : "s"
-                } that might be relevant to your query.`,
-        results: sampleResponse.top_results,
+        text: `I found ${resultCount} document${resultCount === 1 ? "" : "s"} that might be relevant to your query.`,
+        results: response.data.top_results || [],
         isUser: false,
-        tableData: dummyBotResponse.table_data,
-        tableTitle: dummyBotResponse.table_title,
+        // tableData: dummyBotResponse.table_data,
+        // tableTitle: dummyBotResponse.table_title,
         followupQuestions: dummyBotResponse.followupQuestions,
         isTypingComplete: false,
       };
       setMessages((prev) => [...prev, botMsg]);
+    } catch (error) {
+      console.error("API Error:", error);
+      const errorMsg = {
+        id: (Date.now() + 1).toString(),
+        text: "Sorry, I encountered an error while searching. Please try again.",
+        isUser: false,
+        isTypingComplete: false,
+        results: [],
+        followupQuestions: [],
+      };
+      setMessages((prev) => [...prev, errorMsg]);
+    } finally {
       setIsTyping(false);
-    }, 1000);
+    }
   };
 
   const handleSuggestionClick = (text) => {
@@ -218,7 +238,7 @@ const ChatWidget = () => {
     setInputValue(text);
     handleSendMessage(text);
   };
-
+console.log(messages,"messages");
   return (
     <>
       {!isOpen && <FloatingChatIcon onClick={() => setIsOpen(true)} />}
@@ -523,7 +543,7 @@ const ChatWidget = () => {
                     onKeyDown={(e) => e.key === "Enter" && handleSendMessage()}
                   />
                   <IconButton
-                    onClick={handleSendMessage}
+                    onClick={()=>handleSendMessage(null)}
                     disabled={!inputValue.trim()}
                     sx={{
                       ml: 1,

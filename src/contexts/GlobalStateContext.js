@@ -62,15 +62,15 @@ export const GlobalStateProvider = ({ children }) => {
         }
     };
 
-    useEffect(() => {
-        fetchNotifications();
-    }, []);
+    // useEffect(() => {
+    //     fetchNotifications();
+    // }, []);
 
     return (
         <GlobalStateContext.Provider
             value={{
                 notifications,
-                fetchNotifications,
+                // fetchNotifications,
                 setUploadTrigger, // Add this
                 triggerFileUpload
                 // markAsRead,
