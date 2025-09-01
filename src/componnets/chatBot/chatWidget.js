@@ -160,7 +160,7 @@ const ChatWidget = () => {
     try {
       // For demo purposes, we'll use the sample response
       const response = await axios.get(
-        `http://localhost:8084/iassure/api/incident/search`,
+        `http://localhost:8000/query`,
         {
           params: { query: encodeURIComponent(messageText) },
           headers: { "Content-Type": "application/json" },
