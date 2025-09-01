@@ -195,6 +195,7 @@ const ChatWidget = () => {
     setInputValue("");
     setIsTyping(true);
     try {
+      // For demo purposes, we'll use the sample response
       const response = await axios.get(
         `http://localhost:8084/iassure/api/incident/search`,
         {
@@ -202,18 +203,20 @@ const ChatWidget = () => {
           headers: { "Content-Type": "application/json" },
         }
       );
-
+     
+      
+      // await new Promise((res) => setTimeout(res, 800));
       // const response = { data: sampleResponse }; // Use mock response for now
-      // console.log("API Response:", response);
-      const resultCount = response.data.top_results?.length || 0;
+      
+      const resultCount = response.data.sources?.length || 0;
       const botMsg = {
         id: (Date.now() + 1).toString(),
-        text: `I found ${resultCount} document${resultCount === 1 ? "" : "s"} that might be relevant to your query.`,
-        results: response.data.top_results || [],
+        text: response.data.summary || `I found ${resultCount} document${resultCount === 1 ? "" : "s"} that might be relevant to your query.`,
+        results: response.data.sources || [],
         isUser: false,
         // tableData: dummyBotResponse.table_data,
         // tableTitle: dummyBotResponse.table_title,
-        followupQuestions: dummyBotResponse.followupQuestions,
+        followupQuestions: response.data.suggestions || [],
         isTypingComplete: false,
       };
       setMessages((prev) => [...prev, botMsg]);
@@ -238,7 +241,7 @@ const ChatWidget = () => {
     setInputValue(text);
     handleSendMessage(text);
   };
-console.log(messages,"messages");
+
   return (
     <>
       {!isOpen && <FloatingChatIcon onClick={() => setIsOpen(true)} />}

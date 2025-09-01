@@ -37,7 +37,9 @@ const FileViewer = ({ document }) => {
         "GuaranteePolicy2022.pdf": "/files/Government Guarantee Policy.pdf",
         "Policy2022.pdf": "/files/Government Guarantee Policy.pdf",
         "2022PolicyGovt.pdf": "/files/Government Guarantee Policy.pdf",
+        "Government Guarantee Policy.pdf": "/files/Government Guarantee Policy.pdf",
         "OldPolicyCircular2018.pdf": "/files/old_policy_circular.pdf",
+        "old_policy_circular.pdf": "/files/old_policy_circular.pdf",
         "PolicyCircular2018.pdf": "/files/old_policy_circular.pdf",
         "Circular2018.pdf": "/files/old_policy_circular.pdf",
         "2018OldPolicy.pdf": "/files/old_policy_circular.pdf",
@@ -47,6 +49,7 @@ const FileViewer = ({ document }) => {
         "Guidelines.pdf": "/files/Guidelines_for_Government_websites.pdf",
         "Govt_guidelines.pdf": "/files/Guidelines_for_Government_websites.pdf",
         "Website_guidelines.pdf": "/files/Guidelines_for_Government_websites.pdf",
+        "Guidelines_for_Government_websites.pdf": "/files/Guidelines_for_Government_websites.pdf",
         
         // PDF files from Circulars folder (local files)
         "NDSAP Implementation Guidelines.pdf": "/files/NDSAP Implementation Guidelines.pdf",
@@ -67,7 +70,8 @@ const FileViewer = ({ document }) => {
         "Nomination.docx": "https://doiu.doi.gov/whldpdocs/Sample_Supervisor_Nomination_Letter.docx",
         
         // Root level files
-        "Letter_of_DO.pdf": "/files/letter_of_do.pdf", // Local PDF
+        "Letter_of_DO.pdf": "/files/letter_of_do.pdf",
+        "letter_of_do.pdf" : "/files/letter_of_do.pdf",// Local PDF
         "SRP_Upload_Template.xlsx": "https://srp.fas.gsa.gov/portal/docs/FAS%20SRP%20Excel%20Upload%20Reporting%20Template%20v1.3.9.xlsx", // External Excel
         "Readme.txt": "https://www1.ncdc.noaa.gov/pub/data/ghcn/daily/readme.txt", // External Text
         "System-Design-Document.docx": "https://www.cms.gov/Research-Statistics-Data-and-Systems/CMS-Information-Technology/TLC/Downloads/System-Design-Document.docx" // External DOCX
