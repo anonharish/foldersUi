@@ -159,17 +159,17 @@ const ChatWidget = () => {
     setIsTyping(true);
     try {
       // For demo purposes, we'll use the sample response
-      // const response = await axios.get(
-      //   `http://localhost:8084/iassure/api/incident/search`,
-      //   {
-      //     params: { query: encodeURIComponent(messageText) },
-      //     headers: { "Content-Type": "application/json" },
-      //   }
-      // );
+      const response = await axios.get(
+        `http://localhost:8084/iassure/api/incident/search`,
+        {
+          params: { query: encodeURIComponent(messageText) },
+          headers: { "Content-Type": "application/json" },
+        }
+      );
      
       
-      await new Promise((res) => setTimeout(res, 800));
-      const response = { data: sampleResponse };
+      // await new Promise((res) => setTimeout(res, 800));
+      // const response = { data: sampleResponse };
       
       const resultCount = response.data.sources?.length || 0;
       const botMsg = {
