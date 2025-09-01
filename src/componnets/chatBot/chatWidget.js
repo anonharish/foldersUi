@@ -8,25 +8,25 @@ import {
   Stack,
   Button,
   Paper,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Chip
+  Chip,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Tooltip 
 } from "@mui/material";
-import { Close, Send, SmartToy ,  Description, // PDF
+import {
+  Close,
+  Send,
+  Description, // PDF
   Article, // Word documents
   TableChart, // Excel
   Subject, // Text files
   Image, // Images
   Folder,
-  SupportAgent
- } from "@mui/icons-material";
+} from "@mui/icons-material";
 import { motion } from "framer-motion";
 import { TypeAnimation } from "react-type-animation";
-import chatBot from "../../assets/chatbot.png";
 import FloatingChatIcon from "./FloatChatBot";
 import { sampleResponse } from "../incidents/sampleAiSearchResponse";
 import FileViewer from "./FileViewer";
@@ -62,46 +62,6 @@ const TypingIndicator = () => {
       <Box sx={{ ...dotStyle, animationDelay: "0s" }} />
       <Box sx={{ ...dotStyle, animationDelay: "0.25s" }} />
       <Box sx={{ ...dotStyle, animationDelay: "0.5s" }} />
-    </Box>
-  );
-};
-
-// Render table
-const renderTable = (tableData, tableTitle) => {
-  if (!tableData || tableData.length === 0) return null;
-  const columns = Object.keys(tableData[0]);
-  return (
-    <Box sx={{ mt: 2, mb: 1 }}>
-      {tableTitle && (
-        <Typography variant="subtitle2" fontWeight={600} gutterBottom>
-          {tableTitle}
-        </Typography>
-      )}
-      <TableContainer component={Paper} sx={{ boxShadow: 1, borderRadius: 1 }}>
-        <Table size="small">
-          <TableHead>
-            <TableRow sx={{ bgcolor: "#e3f2fd" }}>
-              {columns.map((column) => (
-                <TableCell
-                  key={column}
-                  sx={{ fontWeight: 600, color: "#0d47a1" }}
-                >
-                  {column}
-                </TableCell>
-              ))}
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {tableData.map((row, index) => (
-              <TableRow key={index}>
-                {columns.map((column) => (
-                  <TableCell key={column}>{row[column]}</TableCell>
-                ))}
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </TableContainer>
     </Box>
   );
 };
@@ -159,6 +119,8 @@ const ChatWidget = () => {
   const [inputValue, setInputValue] = useState("");
   const [isTyping, setIsTyping] = useState(false);
   const [selectedDoc, setSelectedDoc] = useState(null);
+  const [searchResults, setSearchResults] = useState([]);
+  const [previewOpen, setPreviewOpen] = useState(false);
   const messagesEndRef = useRef(null);
 
   useEffect(() => {
@@ -178,6 +140,7 @@ const ChatWidget = () => {
     setInputValue("");
     setIsTyping(false);
     setSelectedDoc(null);
+    setSearchResults([]);
   };
 
   const handleSendMessage = async (text = null) => {
@@ -196,30 +159,28 @@ const ChatWidget = () => {
     setIsTyping(true);
     try {
       // For demo purposes, we'll use the sample response
-      const response = await axios.get(
-        `http://localhost:8084/iassure/api/incident/search`,
-        {
-          params: { query: encodeURIComponent(messageText) },
-          headers: { "Content-Type": "application/json" },
-        }
-      );
+      // const response = await axios.get(
+      //   `http://localhost:8084/iassure/api/incident/search`,
+      //   {
+      //     params: { query: encodeURIComponent(messageText) },
+      //     headers: { "Content-Type": "application/json" },
+      //   }
+      // );
      
       
-      // await new Promise((res) => setTimeout(res, 800));
-      // const response = { data: sampleResponse }; // Use mock response for now
+      await new Promise((res) => setTimeout(res, 800));
+      const response = { data: sampleResponse };
       
       const resultCount = response.data.sources?.length || 0;
       const botMsg = {
         id: (Date.now() + 1).toString(),
         text: response.data.summary || `I found ${resultCount} document${resultCount === 1 ? "" : "s"} that might be relevant to your query.`,
-        results: response.data.sources || [],
         isUser: false,
-        // tableData: dummyBotResponse.table_data,
-        // tableTitle: dummyBotResponse.table_title,
         followupQuestions: response.data.suggestions || [],
         isTypingComplete: false,
       };
       setMessages((prev) => [...prev, botMsg]);
+      setSearchResults(response.data.sources || []);
     } catch (error) {
       console.error("API Error:", error);
       const errorMsg = {
@@ -227,10 +188,10 @@ const ChatWidget = () => {
         text: "Sorry, I encountered an error while searching. Please try again.",
         isUser: false,
         isTypingComplete: false,
-        results: [],
         followupQuestions: [],
       };
       setMessages((prev) => [...prev, errorMsg]);
+      setSearchResults([]);
     } finally {
       setIsTyping(false);
     }
@@ -240,6 +201,16 @@ const ChatWidget = () => {
     if (!text || isTyping) return;
     setInputValue(text);
     handleSendMessage(text);
+  };
+
+  const handleViewDocument = (doc) => {
+    setSelectedDoc(doc);
+    setPreviewOpen(true);
+  };
+
+  const handleClosePreview = () => {
+    setPreviewOpen(false);
+    setSelectedDoc(null);
   };
 
   return (
@@ -279,7 +250,7 @@ const ChatWidget = () => {
               }}
             >
               <Avatar sx={{ bgcolor: "#ea641f", width: 40, height: 40 }}>
-                 <Bot/>
+                <Bot />
               </Avatar>
               <Typography variant="subtitle1" fontWeight={600} ml={2}>
                 AI Document Search
@@ -347,129 +318,6 @@ const ChatWidget = () => {
                           ) : (
                             <span>{msg.text}</span>
                           )}
-
-                          {/* documents */}
-                          {!msg.isUser &&
-                            msg.isTypingComplete &&
-                            msg.results && (
-                              <Box sx={{ mt: 1 }}>
-                                {msg.results.map((doc, i) => {
-                                  // Get file extension
-                                  const fileExtension = doc.fileName
-                                    .split(".")
-                                    .pop()
-                                    .toLowerCase();
-                                  return (
-                                    <Paper
-                                      key={i}
-                                      sx={{
-                                        p: 1.5,
-                                        mb: 1.5,
-                                        border: "1px solid #e0e0e0",
-                                        borderRadius: 2,
-                                        boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
-                                        transition: "all 0.2s ease",
-                                        "&:hover": {
-                                          boxShadow:
-                                            "0 4px 12px rgba(0,0,0,0.12)",
-                                          transform: "translateY(-2px)",
-                                          borderColor: getFileColor(fileExtension),
-                                        },
-                                      }}
-                                    >
-                                      <Box
-                                        sx={{
-                                          display: "flex",
-                                          alignItems: "flex-start",
-                                        }}
-                                      >
-                                        <Box
-                                          sx={{
-                                            fontSize: "24px",
-                                            mr: 2,
-                                            color: getFileColor(fileExtension),
-                                          }}
-                                        >
-                                          {getFileIcon(fileExtension)}
-                                        </Box>
-
-                                        <Box sx={{ flexGrow: 1 }}>
-                                          <Box
-                                            sx={{
-                                              display: "flex",
-                                              alignItems: "center",
-                                              mb: 0.5,
-                                            }}
-                                          >
-                                            <Typography
-                                              variant="body2"
-                                              fontWeight={600}
-                                              sx={{ mr: 1 }}
-                                            >
-                                              {doc.fileName}
-                                            </Typography>
-                                            <Box
-                                              sx={{
-                                                backgroundColor: `${getFileColor(fileExtension)}15`, // 15 = ~10% opacity
-                                                color: getFileColor(fileExtension),
-                                                fontSize: "10px",
-                                                fontWeight: "bold",
-                                                px: 1,
-                                                py: 0.5,
-                                                borderRadius: 1,
-                                                textTransform: "uppercase",
-                                              }}
-                                            >
-                                              {fileExtension}
-                                            </Box>
-                                          </Box>
-
-                                          <Typography
-                                            variant="caption"
-                                            color="text.secondary"
-                                            sx={{
-                                              lineHeight: 1.4,
-                                              display: "block",
-                                            }}
-                                          >
-                                            {doc.content.slice(0, 120)}...
-                                          </Typography>
-
-                                          <Button
-                                            variant="contained"
-                                            size="small"
-                                            sx={{
-                                              mt: 1.5,
-                                              backgroundColor: "#3b54b0", // Use your primary color instead of file-specific color
-                                              "&:hover": {
-                                                backgroundColor: "#2a3c82", // Darker shade for hover
-                                                opacity: 0.9,
-                                                boxShadow: "0 2px 4px rgba(0,0,0,0.2)",
-                                              },
-                                              fontSize: "12px",
-                                              fontWeight: "bold",
-                                              px: 2,
-                                              py: 0.5,
-                                              borderRadius: 1,
-                                              textTransform: "none",
-                                            }}
-                                            onClick={() => setSelectedDoc(doc)}
-                                          >
-                                            View Document
-                                          </Button>
-                                        </Box>
-                                      </Box>
-                                    </Paper>
-                                  );
-                                })}
-                              </Box>
-                            )}
-
-                          {/* table */}
-                          {/* {!msg.isUser &&
-                            msg.isTypingComplete &&
-                            msg.tableData &&
-                            renderTable(msg.tableData, msg.tableTitle)} */}
                         </Box>
                       </Box>
                     ))}
@@ -479,7 +327,7 @@ const ChatWidget = () => {
                         sx={{ display: "flex", justifyContent: "flex-start" }}
                       >
                         <Avatar sx={{ bgcolor: "#3b54b0", mr: 1 }}>
-                         <Bot/>
+                          <Bot />
                         </Avatar>
                         <TypingIndicator />
                       </Box>
@@ -511,15 +359,15 @@ const ChatWidget = () => {
                             size="small"
                             variant="outlined"
                             sx={{
-                              fontSize: '0.8rem',
-                              fontWeight: '500',
-                              height: '24px',
-                              borderRadius: '12px',
-                              color: '#3b54b0',
-                              borderColor: '#3b54b040',
-                              '&:hover': {
-                                backgroundColor: '#3b54b010',
-                              }
+                              fontSize: "0.8rem",
+                              fontWeight: "500",
+                              height: "24px",
+                              borderRadius: "12px",
+                              color: "#3b54b0",
+                              borderColor: "#3b54b040",
+                              "&:hover": {
+                                backgroundColor: "#3b54b010",
+                              },
                             }}
                           />
                         )
@@ -532,7 +380,7 @@ const ChatWidget = () => {
                   sx={{
                     display: "flex",
                     alignItems: "center",
-                    p: 1, 
+                    p: 1,
                     borderTop: "1px solid #ccc",
                     bgcolor: "white",
                   }}
@@ -546,14 +394,14 @@ const ChatWidget = () => {
                     onKeyDown={(e) => e.key === "Enter" && handleSendMessage()}
                   />
                   <IconButton
-                    onClick={()=>handleSendMessage(null)}
+                    onClick={() => handleSendMessage(null)}
                     disabled={!inputValue.trim()}
                     sx={{
                       ml: 1,
                       bgcolor: "#3b54b0",
                       "&:hover": {
                         bgcolor: "#2a3c82",
-                      }
+                      },
                     }}
                   >
                     <Send sx={{ fontSize: 20 }} />
@@ -561,99 +409,288 @@ const ChatWidget = () => {
                 </Box>
               </Box>
 
-              {/* Right side: File Preview */}
+              {/* Right side: Search Results */}
               <Box
                 sx={{
-                  flex: 1,
+                  width: "35%",
                   borderLeft: "1px solid #ddd",
                   p: 2,
                   height: "90vh",
                   overflow: "auto",
+                  bgcolor: "#fafafa",
                 }}
               >
-                {selectedDoc ? (
-                  <FileViewer document={selectedDoc} />
-                ) : (
+                <Typography
+                  variant="h6"
+                  sx={{ fontWeight: 600, mb: 2, color: "#2d3a80" }}
+                >
+                  Search Results
+                </Typography>
+
+                {searchResults.length === 0 ? (
+                  <Box
+                    sx={{
+                      height: "100%",
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      p: 3,
+                      textAlign: "center",
+                    }}
+                  >
                     <Box
                       sx={{
-                        height: "100%",
-                        display: "flex",
-                        flexDirection: "column",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        p: 3,
-                        textAlign: "center",
-                        background: "linear-gradient(135deg, #f9fafb 0%, #f0f4ff 100%)",
-                        borderRadius: 1,
+                        position: "relative",
+                        width: 160,
+                        height: 120,
+                        mb: 3,
                       }}
                     >
                       <Box
                         sx={{
-                          position: "relative",
-                          width: 160,
-                          height: 120,
-                          mb: 3,
+                          position: "absolute",
+                          top: 0,
+                          left: 20,
+                          width: 120,
+                          height: 90,
+                          backgroundColor: "white",
+                          borderRadius: 2,
+                          boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
                         }}
                       >
-                        <Box
+                        <Description sx={{ fontSize: 40, color: "#3b54b0" }} />
+                      </Box>
+                      <Box
+                        sx={{
+                          position: "absolute",
+                          top: 15,
+                          left: 0,
+                          width: 100,
+                          height: 75,
+                          backgroundColor: "white",
+                          borderRadius: 2,
+                          boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
+                          opacity: 0.7,
+                        }}
+                      />
+                      <Box
+                        sx={{
+                          position: "absolute",
+                          top: 30,
+                          left: 40,
+                          width: 80,
+                          height: 60,
+                          backgroundColor: "white",
+                          borderRadius: 2,
+                          boxShadow: "0 4px 12px rgba(0,0,0,0.06)",
+                          opacity: 0.5,
+                        }}
+                      />
+                    </Box>
+
+                    <Typography
+                      variant="body2"
+                      sx={{ mb: 2, color: "text.secondary", maxWidth: 280 }}
+                    >
+                      Your search results will appear here
+                    </Typography>
+                  </Box>
+                ) : (
+                  <Stack spacing={2}>
+                    {searchResults.map((doc, i) => {
+                      const fileExtension = doc.fileName
+                        .split(".")
+                        .pop()
+                        .toLowerCase();
+                      return (
+                        <Paper
+                          key={i}
                           sx={{
-                            position: "absolute",
-                            top: 0,
-                            left: 20,
-                            width: 120,
-                            height: 90,
-                            backgroundColor: "white",
+                            p: 2,
+                            border: "1px solid #e0e0e0",
                             borderRadius: 2,
-                            boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
+                            boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
+                            transition: "all 0.2s ease",
+                            "&:hover": {
+                              boxShadow: "0 4px 12px rgba(0,0,0,0.12)",
+                              transform: "translateY(-2px)",
+                              borderColor: getFileColor(fileExtension),
+                            },
                           }}
                         >
-                          <Description sx={{ fontSize: 40, color: "#3b54b0" }} />
-                        </Box>
-                        <Box
-                          sx={{
-                            position: "absolute",
-                            top: 15,
-                            left: 0,
-                            width: 100,
-                            height: 75,
-                            backgroundColor: "white",
-                            borderRadius: 2,
-                            boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
-                            opacity: 0.7,
-                          }}
-                        />
-                        <Box
-                          sx={{
-                            position: "absolute",
-                            top: 30,
-                            left: 40,
-                            width: 80,
-                            height: 60,
-                            backgroundColor: "white",
-                            borderRadius: 2,
-                            boxShadow: "0 4px 12px rgba(0,0,0,0.06)",
-                            opacity: 0.5,
-                          }}
-                        />
-                      </Box>
+                          <Box
+                            sx={{
+                              display: "flex",
+                              alignItems: "flex-start",
+                            }}
+                          >
+                            <Box
+                              sx={{
+                                fontSize: "24px",
+                                mr: 2,
+                                color: getFileColor(fileExtension),
+                              }}
+                            >
+                              {getFileIcon(fileExtension)}
+                            </Box>
 
-                      <Typography variant="h6" sx={{ fontWeight: 600, mb: 1, color: "#2d3a80" }}>
-                        Document Preview Area
-                      </Typography>
+                            <Box sx={{ flexGrow: 1 }}>
+                              <Box
+                                sx={{
+                                  display: "flex",
+                                  alignItems: "center",
+                                  justifyContent: "space-between",
+                                  mb: 1,
+                                }}
+                              >
+                                <Typography
+                                  variant="body2"
+                                  fontWeight={600}
+                                  sx={{ mr: 1 }}
+                                >
+                                  {doc.fileName}
+                                </Typography>
+                                <Chip
+                                  label={`${(doc.score * 100).toFixed(
+                                    1
+                                  )}% match`}
+                                  size="small"
+                                  color="primary"
+                                  variant="outlined"
+                                />
+                              </Box>
 
-                      <Typography variant="body2" sx={{ mb: 2, color: "text.secondary", maxWidth: 280 }}>
-                        Select any document from the conversation to view its detailed content here
-                      </Typography>
-                    </Box>
+                              <Box
+                                sx={{
+                                  display: "flex",
+                                  alignItems: "center",
+                                  mb: 1,
+                                }}
+                              >
+                                <Box
+                                  sx={{
+                                    backgroundColor: `${getFileColor(
+                                      fileExtension
+                                    )}15`,
+                                    color: getFileColor(fileExtension),
+                                    fontSize: "10px",
+                                    fontWeight: "bold",
+                                    px: 1,
+                                    py: 0.5,
+                                    borderRadius: 1,
+                                    textTransform: "uppercase",
+                                    mr: 1,
+                                  }}
+                                >
+                                  {fileExtension}
+                                </Box>
+                              </Box>
+
+                              <Tooltip
+                                title={doc.content}
+                                placement="top"
+                                arrow
+                                sx={{
+                                  maxWidth: "500px", // Limit tooltip width
+                                  whiteSpace: "pre-wrap", // Preserve line breaks
+                                  wordBreak: "break-word", // Break long words
+                                }}
+                              >
+                                <Typography
+                                  variant="caption"
+                                  color="text.secondary"
+                                  sx={{
+                                    lineHeight: 1.4,
+                                    display: "block",
+                                    mb: 1.5,
+                                  }}
+                                >
+                                  {doc.content.slice(0, 100)}...
+                                </Typography>
+                              </Tooltip>
+
+                              <Button
+                                variant="contained"
+                                size="small"
+                                sx={{
+                                  backgroundColor: "#3b54b0",
+                                  "&:hover": {
+                                    backgroundColor: "#2a3c82",
+                                  },
+                                  fontSize: "12px",
+                                  fontWeight: "bold",
+                                  px: 2,
+                                  py: 0.5,
+                                  borderRadius: 1,
+                                  textTransform: "none",
+                                  marginLeft: "auto", // This will push the button to the right
+                                  display: "block", // Ensure it behaves as a block element
+                                }}
+                                onClick={() => handleViewDocument(doc)}
+                              >
+                                View
+                              </Button>
+                            </Box>
+                          </Box>
+                        </Paper>
+                      );
+                    })}
+                  </Stack>
                 )}
               </Box>
             </Box>
           </Box>
         </motion.div>
       )}
+
+      {/* Document Preview Dialog */}
+      <Dialog
+        open={previewOpen}
+        onClose={handleClosePreview}
+        fullWidth
+        maxWidth="lg" // Changed from "md" to "lg" for larger size
+        sx={{
+          "& .MuiDialog-paper": {
+            height: "90vh", // Increased from 80vh to 90vh
+            maxWidth: "1200px", // Added maxWidth for even larger dialog
+            width: "95vw", // Added width for better control
+          },
+        }}
+      >
+        <DialogTitle>
+          Document Preview
+          <IconButton
+            aria-label="close"
+            onClick={handleClosePreview}
+            sx={{
+              position: "absolute",
+              right: 8,
+              top: 8,
+              color: (theme) => theme.palette.grey[500],
+            }}
+          >
+            <Close />
+          </IconButton>
+        </DialogTitle>
+        <DialogContent dividers>
+          {selectedDoc ? (
+            <FileViewer document={selectedDoc} />
+          ) : (
+            <Typography variant="body2" color="textSecondary">
+              No document selected for preview.
+            </Typography>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleClosePreview} color="primary">
+            Close
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       <style>{`
         @keyframes typing-bounce {
